@@ -1,6 +1,7 @@
 package es.rboluda.klippo.ui.inicio
 
 import android.Manifest
+import android.content.ClipboardManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -41,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -52,6 +55,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import es.rboluda.klippo.BuildConfig
 import es.rboluda.klippo.R
+import es.rboluda.klippo.ajustes.Calidad
+import es.rboluda.klippo.util.Enlaces
 import es.rboluda.klippo.descarga.EstadoMotor
 import es.rboluda.klippo.sesion.Plataforma
 import es.rboluda.klippo.sesion.SesionActivity
@@ -77,6 +82,9 @@ fun InicioScreen(viewModel: InicioViewModel = viewModel(factory = InicioViewMode
         onPauseOrDispose { }
     }
 
+    val calidad by viewModel.calidad.collectAsStateWithLifecycle()
+    val urlCompartida by viewModel.urlCompartida.collectAsStateWithLifecycle()
+
     // Tras responder al permiso (sí o no) se lanza la descarga igualmente
     val pedirPermiso = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -85,16 +93,44 @@ fun InicioScreen(viewModel: InicioViewModel = viewModel(factory = InicioViewMode
         urlPendiente = null
     }
 
+    // El permiso de notificaciones se pide en la primera descarga, venga de donde venga
+    val lanzarDescarga = { enlace: String ->
+        if (viewModel.debePedirPermisoNotificaciones()) {
+            viewModel.marcarPermisoPedido()
+            urlPendiente = enlace
+            pedirPermiso.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            viewModel.descargar(enlace)
+        }
+    }
+
     val empezarDescarga = {
         if (url.isNotBlank() && estadoMotor is EstadoMotor.Listo) {
-            if (viewModel.debePedirPermisoNotificaciones()) {
-                viewModel.marcarPermisoPedido()
-                urlPendiente = url
-                pedirPermiso.launch(Manifest.permission.POST_NOTIFICATIONS)
-            } else {
-                viewModel.descargar(url)
-            }
+            lanzarDescarga(url)
             url = ""
+        }
+    }
+
+    // Enlace compartido desde otra app: se descarga directamente (el servicio espera
+    // a que el motor esté listo si aún está arrancando)
+    LaunchedEffect(urlCompartida) {
+        urlCompartida?.let {
+            lanzarDescarga(it)
+            viewModel.compartidoConsumido()
+        }
+    }
+
+    // Autorrelleno desde el portapapeles. Android solo deja leerlo con la ventana
+    // enfocada, así que se hace al ganar el foco (al abrir o volver a la app)
+    val ventanaEnfocada = LocalWindowInfo.current.isWindowFocused
+    LaunchedEffect(ventanaEnfocada) {
+        if (!ventanaEnfocada || url.isNotBlank()) return@LaunchedEffect
+        val portapapeles = context.getSystemService(ClipboardManager::class.java)
+        val texto = portapapeles.primaryClip?.takeIf { it.itemCount > 0 }
+            ?.getItemAt(0)?.coerceToText(context)?.toString()
+        val enlace = Enlaces.extraerUrl(texto)
+        if (enlace != null && Enlaces.esSoportada(enlace) && viewModel.debeAutorrellenar(enlace)) {
+            url = enlace
         }
     }
 
@@ -159,12 +195,18 @@ fun InicioScreen(viewModel: InicioViewModel = viewModel(factory = InicioViewMode
                 ),
                 keyboardActions = KeyboardActions(onGo = { empezarDescarga() }),
             )
-            Button(
-                onClick = empezarDescarga,
-                enabled = url.isNotBlank() && estadoMotor is EstadoMotor.Listo,
-                modifier = Modifier.align(Alignment.End),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(stringResource(R.string.inicio_descargar))
+                SelectorCalidad(calidad, onElegir = viewModel::elegirCalidad)
+                Spacer(Modifier.weight(1f))
+                Button(
+                    onClick = empezarDescarga,
+                    enabled = url.isNotBlank() && estadoMotor is EstadoMotor.Listo,
+                ) {
+                    Text(stringResource(R.string.inicio_descargar))
+                }
             }
 
             if (descargas.isEmpty()) {
@@ -194,6 +236,28 @@ fun InicioScreen(viewModel: InicioViewModel = viewModel(factory = InicioViewMode
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+// Botón con la calidad actual que despliega las opciones
+@Composable
+private fun SelectorCalidad(calidad: Calidad, onElegir: (Calidad) -> Unit) {
+    var abierto by remember { mutableStateOf(false) }
+    Box {
+        TextButton(onClick = { abierto = true }) {
+            Text(stringResource(calidad.etiqueta) + " ▾")
+        }
+        DropdownMenu(expanded = abierto, onDismissRequest = { abierto = false }) {
+            for (opcion in Calidad.entries) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(opcion.etiqueta)) },
+                    onClick = {
+                        abierto = false
+                        onElegir(opcion)
+                    },
+                )
             }
         }
     }

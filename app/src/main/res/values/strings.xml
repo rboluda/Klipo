@@ -6,6 +6,10 @@
     <string name="inicio_url_ayuda">YouTube, TikTok, X o Instagram</string>
     <string name="inicio_descargar">Descargar</string>
     <string name="inicio_lista_vacia">Aún no hay descargas</string>
+    <string name="calidad_mejor">Mejor calidad</string>
+    <string name="calidad_1080">Hasta 1080p</string>
+    <string name="calidad_720">Hasta 720p</string>
+    <string name="calidad_480">Hasta 480p</string>
     <string name="menu_opciones">Más opciones</string>
 
     <string name="motor_iniciando">Motor: preparando…</string>

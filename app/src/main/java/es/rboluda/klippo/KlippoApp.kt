@@ -1,6 +1,7 @@
 package es.rboluda.klippo
 
 import android.app.Application
+import es.rboluda.klippo.ajustes.AjustesRepositorio
 import es.rboluda.klippo.almacenamiento.LimpiezaCache
 import es.rboluda.klippo.descarga.DescargaService
 import es.rboluda.klippo.descarga.DescargasRepositorio
@@ -22,6 +23,8 @@ class KlippoApp : Application() {
         private set
 
     val descargas = DescargasRepositorio()
+
+    val ajustes by lazy { AjustesRepositorio(this) }
 
     val carpetaDescargas: File get() = File(cacheDir, DescargaService.CARPETA_DESCARGAS)
 

@@ -64,7 +64,11 @@ class DescargaService : Service() {
         val id = descarga.id
         try {
             val cookies = Sesiones.cookiesPara(this, descarga.url)
-            val archivo = app.motor.descargar(id, descarga.url, descarga.carpeta, cookies) { progreso, eta ->
+            // Siempre los últimos ajustes usados (también para enlaces compartidos)
+            val calidad = app.ajustes.calidadActual()
+            val archivo = app.motor.descargar(
+                id, descarga.url, descarga.carpeta, cookies, calidad.alturaMax,
+            ) { progreso, eta ->
                 // Este callback llega desde el hilo del proceso de yt-dlp
                 app.descargas.actualizar(id) { it.copy(progreso = progreso, etaSegundos = eta) }
                 ambito.launch { refrescarNotificacion(id, forzar = false) }

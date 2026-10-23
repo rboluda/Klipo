@@ -54,12 +54,14 @@ class MotorDescarga(private val context: Context) {
         carpeta: File,
         // Cookies de sesión (Instagram, X) si el usuario ha iniciado sesión
         cookies: File?,
+        // Altura máxima en píxeles (1080, 720...); null = la mejor disponible
+        alturaMax: Int?,
         alProgreso: (progreso: Float, etaSegundos: Long) -> Unit,
     ): File = withContext(Dispatchers.IO) {
         check(esperarListo()) { "El motor no está listo" }
         carpeta.mkdirs()
         val peticion = YoutubeDLRequest(url).apply {
-            addOption("-f", FORMATO_MP4)
+            addOption("-f", formato(alturaMax))
             // Si solo hay WebM/MKV, se cambia el contenedor a MP4 sin recodificar
             addOption("--remux-video", "mp4")
             addOption("--no-playlist")
@@ -105,9 +107,19 @@ class MotorDescarga(private val context: Context) {
 
     companion object {
         // Mejor calidad en MP4, prefiriendo H.264 (se comparte y edita sin problemas);
-        // si no existe, cualquier MP4 y, en último caso, lo mejor disponible
-        private const val FORMATO_MP4 =
-            "bv*[ext=mp4][vcodec^=avc]+ba[ext=m4a]/bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/bv*+ba/b"
+        // si no existe, cualquier MP4 y, en último caso, lo mejor disponible.
+        // Con [alturaMax] se limita la resolución; si nada cumple el límite, se baja lo que haya.
+        fun formato(alturaMax: Int?): String {
+            val limite = alturaMax?.let { "[height<=$it]" }.orEmpty()
+            return listOf(
+                "bv*[ext=mp4][vcodec^=avc]$limite+ba[ext=m4a]",
+                "bv*[ext=mp4]$limite+ba[ext=m4a]",
+                "b[ext=mp4]$limite",
+                "bv*$limite+ba",
+                "b$limite",
+                "b",
+            ).distinct().joinToString("/")
+        }
         private const val ARCHIVO_TITULO = "titulo.txt"
 
         // Extrae la línea "ERROR: ..." de la salida de yt-dlp para mostrarla al usuario

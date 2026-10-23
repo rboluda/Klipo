@@ -91,6 +91,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.datastore.preferences)
 
     // Motor de descarga: yt-dlp (con Python) y FFmpeg empaquetados
     implementation(libs.youtubedl.library)

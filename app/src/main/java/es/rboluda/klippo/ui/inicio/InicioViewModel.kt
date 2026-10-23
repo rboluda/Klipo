@@ -13,6 +13,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import es.rboluda.klippo.KlippoApp
 import es.rboluda.klippo.R
+import es.rboluda.klippo.ajustes.Calidad
 import es.rboluda.klippo.descarga.Descarga
 import es.rboluda.klippo.descarga.DescargaService
 import es.rboluda.klippo.descarga.EstadoMotor
@@ -42,7 +43,38 @@ class InicioViewModel(private val app: KlippoApp) : ViewModel() {
     val descargas: StateFlow<List<Descarga>> = app.descargas.descargas
 
     fun descargar(url: String) {
+        ultimaUrlPegada = url.trim()
         DescargaService.descargar(app, url.trim())
+    }
+
+    // Calidad recordada: la elegida aquí se usa también para los enlaces compartidos
+    val calidad: StateFlow<Calidad> = app.ajustes.calidad
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Calidad.MEJOR)
+
+    fun elegirCalidad(calidad: Calidad) {
+        viewModelScope.launch { app.ajustes.guardarCalidad(calidad) }
+    }
+
+    // Enlace recibido desde Compartir de otra app; la pantalla lo consume y lo descarga
+    private val _urlCompartida = MutableStateFlow<String?>(null)
+    val urlCompartida: StateFlow<String?> = _urlCompartida.asStateFlow()
+
+    fun recibirCompartido(url: String) {
+        ultimaUrlPegada = url
+        _urlCompartida.value = url
+    }
+
+    fun compartidoConsumido() {
+        _urlCompartida.value = null
+    }
+
+    // Evita volver a pegar del portapapeles un enlace ya usado
+    private var ultimaUrlPegada: String? = null
+
+    fun debeAutorrellenar(url: String): Boolean {
+        if (url == ultimaUrlPegada || descargas.value.any { it.url == url }) return false
+        ultimaUrlPegada = url
+        return true
     }
 
     fun cancelar(id: String) {
