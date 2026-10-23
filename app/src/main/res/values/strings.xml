@@ -30,6 +30,8 @@
     <string name="sesion_guardada">Sesión de %1$s guardada</string>
     <string name="sesion_no_detectada">Aún no has iniciado sesión en %1$s</string>
     <string name="sesion_cerrada">Sesión de %1$s cerrada</string>
+    <string name="sesion_error_carga">No se pudo cargar %1$s. Comprueba la conexión.</string>
+    <string name="reintentar">Reintentar</string>
 
     <string name="cancelar">Cancelar</string>
     <string name="canal_progreso">Progreso de descargas</string>
