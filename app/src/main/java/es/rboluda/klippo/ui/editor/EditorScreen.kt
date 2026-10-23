@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -57,10 +58,33 @@ import kotlinx.coroutines.delay
 import java.io.File
 import java.util.Locale
 
-// Herramientas de la barra inferior. La Fase 3 añadirá emojis y pixelado.
+// Herramientas de la barra inferior. Falta el pixelado (3.3).
 private enum class Herramienta(@param:StringRes val nombre: Int, @param:DrawableRes val icono: Int) {
     RECORTAR(R.string.editor_recortar, R.drawable.ic_recortar),
     ENCUADRE(R.string.editor_encuadre, R.drawable.ic_encuadre),
+    EMOJI(R.string.editor_emoji, R.drawable.ic_emoji),
+}
+
+// Botón para añadir y recordatorio de los gestos
+@Composable
+private fun PanelEmoji(onAnadir: () -> Unit) {
+    Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.emoji_ayuda),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+            FilledTonalButton(onClick = onAnadir) { Text(stringResource(R.string.emoji_anadir)) }
+        }
+    }
 }
 
 // Formatos de encuadre como chips; "Original" quita el encuadre
@@ -110,6 +134,18 @@ fun EditorScreen(
     val aspecto = medidas?.aspecto ?: 0f
     val recorte by viewModel.recorte.collectAsStateWithLifecycle()
     val encuadre by viewModel.encuadre.collectAsStateWithLifecycle()
+    val emojis by viewModel.emojis.collectAsStateWithLifecycle()
+    var eligiendoEmoji by rememberSaveable { mutableStateOf(false) }
+
+    if (eligiendoEmoji) {
+        DialogoEmoji(
+            onElegir = {
+                viewModel.agregarEmoji(it)
+                eligiendoEmoji = false
+            },
+            onCancelar = { eligiendoEmoji = false },
+        )
+    }
     var herramienta by rememberSaveable { mutableStateOf<Herramienta?>(null) }
     val archivo = descarga?.archivo?.takeIf { it.exists() }
     val reproductor = archivo?.let { rememberReproductor(it) }
@@ -172,13 +208,16 @@ fun EditorScreen(
                         onElegir = viewModel::elegirFormato,
                     )
                 }
+                if (herramienta == Herramienta.EMOJI) {
+                    PanelEmoji(onAnadir = { eligiendoEmoji = true })
+                }
                 NavigationBar {
                     for (opcion in Herramienta.entries) {
                         NavigationBarItem(
                             selected = herramienta == opcion,
                             onClick = { herramienta = if (herramienta == opcion) null else opcion },
-                            // El encuadre necesita conocer las medidas del vídeo
-                            enabled = archivo != null && (opcion != Herramienta.ENCUADRE || aspecto > 0f),
+                            // Encuadre y emojis necesitan conocer las medidas del vídeo
+                            enabled = archivo != null && (opcion == Herramienta.RECORTAR || aspecto > 0f),
                             icon = { Icon(painterResource(opcion.icono), null) },
                             label = { Text(stringResource(opcion.nombre)) },
                         )
@@ -202,6 +241,16 @@ fun EditorScreen(
                         factory = { PlayerView(it).apply { player = reproductor } },
                         modifier = Modifier.fillMaxSize(),
                     )
+                    // Mismo orden que al exportar: emojis sobre el vídeo y, encima, el encuadre
+                    if (emojis.isNotEmpty() || herramienta == Herramienta.EMOJI) {
+                        CapaEmojis(
+                            emojis = emojis,
+                            editable = herramienta == Herramienta.EMOJI,
+                            onMover = viewModel::moverEmoji,
+                            onEscalar = viewModel::escalarEmoji,
+                            onBorrar = viewModel::borrarEmoji,
+                        )
+                    }
                     encuadre?.let {
                         CapaEncuadre(
                             encuadre = it,

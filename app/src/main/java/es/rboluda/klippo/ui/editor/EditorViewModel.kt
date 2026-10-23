@@ -1,6 +1,5 @@
 package es.rboluda.klippo.ui.editor
 
-import android.media.MediaMetadataRetriever
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -10,8 +9,10 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import es.rboluda.klippo.KlippoApp
 import es.rboluda.klippo.descarga.Descarga
+import es.rboluda.klippo.edicion.EmojiSuperpuesto
 import es.rboluda.klippo.edicion.Encuadre
 import es.rboluda.klippo.edicion.Formato
+import es.rboluda.klippo.edicion.MedidasVideo
 import es.rboluda.klippo.edicion.ParametrosEdicion
 import es.rboluda.klippo.edicion.Recorte
 import es.rboluda.klippo.ui.Rutas
@@ -24,11 +25,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-// Medidas del vídeo ya girado (como se ve en pantalla)
-data class MedidasVideo(val duracionMs: Long, val ancho: Int, val alto: Int) {
-    val aspecto: Float get() = if (ancho > 0 && alto > 0) ancho.toFloat() / alto else 0f
-}
 
 // Estado del editor. La UI solo recoge parámetros: el vídeo no se toca hasta exportar.
 // Todo se guarda en SavedStateHandle para no perderlo al girar la pantalla.
@@ -45,11 +41,14 @@ class EditorViewModel(app: KlippoApp, private val estado: SavedStateHandle) : Vi
 
     val recorte: StateFlow<Recorte?> = estado.getStateFlow<Recorte?>(CLAVE_RECORTE, null)
     val encuadre: StateFlow<Encuadre?> = estado.getStateFlow<Encuadre?>(CLAVE_ENCUADRE, null)
+    // ArrayList: SavedStateHandle necesita un tipo Serializable concreto
+    val emojis: StateFlow<ArrayList<EmojiSuperpuesto>> =
+        estado.getStateFlow(CLAVE_EMOJIS, ArrayList())
 
     init {
         app.descargas.buscar(id)?.archivo?.let { archivo ->
             viewModelScope.launch {
-                val medidas = withContext(Dispatchers.IO) { leerMedidas(archivo.absolutePath) }
+                val medidas = withContext(Dispatchers.IO) { MedidasVideo.leer(archivo) }
                 _medidas.value = medidas
                 if (recorte.value == null && medidas.duracionMs > 0) {
                     estado[CLAVE_RECORTE] = Recorte(0, medidas.duracionMs)
@@ -77,33 +76,42 @@ class EditorViewModel(app: KlippoApp, private val estado: SavedStateHandle) : Vi
         estado[CLAVE_ENCUADRE] = encuadre
     }
 
+    // Los emojis nuevos aparecen en el centro; se colocan después con gestos
+    fun agregarEmoji(texto: String) {
+        guardarEmojis(emojis.value + EmojiSuperpuesto(id = System.nanoTime(), texto = texto))
+    }
+
+    fun moverEmoji(id: Long, dx: Float, dy: Float) = cambiarEmoji(id) { it.mover(dx, dy) }
+
+    fun escalarEmoji(id: Long, factor: Float) = cambiarEmoji(id) { it.escalar(factor) }
+
+    fun borrarEmoji(id: Long) {
+        guardarEmojis(emojis.value.filterNot { it.id == id })
+    }
+
+    private fun cambiarEmoji(id: Long, cambio: (EmojiSuperpuesto) -> EmojiSuperpuesto) {
+        guardarEmojis(emojis.value.map { if (it.id == id) cambio(it) else it })
+    }
+
+    private fun guardarEmojis(lista: List<EmojiSuperpuesto>) {
+        estado[CLAVE_EMOJIS] = ArrayList(lista)
+    }
+
     // Lo que se aplicará al exportar (sin recorte si se deja el vídeo entero)
     fun parametros(): ParametrosEdicion {
         val duracion = _medidas.value?.duracionMs ?: 0L
         val recorteEfectivo = recorte.value?.takeIf { it.inicioMs > 0 || it.finMs < duracion }
-        return ParametrosEdicion(recorte = recorteEfectivo, encuadre = encuadre.value)
-    }
-
-    private fun leerMedidas(ruta: String): MedidasVideo {
-        val lector = MediaMetadataRetriever()
-        return try {
-            lector.setDataSource(ruta)
-            fun entero(clave: Int) = lector.extractMetadata(clave)?.toLongOrNull() ?: 0L
-            var ancho = entero(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH).toInt()
-            var alto = entero(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT).toInt()
-            val rotacion = entero(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION).toInt()
-            if (rotacion == 90 || rotacion == 270) ancho = alto.also { alto = ancho }
-            MedidasVideo(entero(MediaMetadataRetriever.METADATA_KEY_DURATION), ancho, alto)
-        } catch (e: Exception) {
-            MedidasVideo(0, 0, 0)
-        } finally {
-            lector.release()
-        }
+        return ParametrosEdicion(
+            recorte = recorteEfectivo,
+            encuadre = encuadre.value,
+            emojis = emojis.value.toList(),
+        )
     }
 
     companion object {
         private const val CLAVE_RECORTE = "recorte"
         private const val CLAVE_ENCUADRE = "encuadre"
+        private const val CLAVE_EMOJIS = "emojis"
         const val DURACION_MINIMA_MS = 500L
 
         val Factory = viewModelFactory {

@@ -55,6 +55,11 @@
     <string name="editor_encuadre">Encuadre</string>
     <string name="encuadre_original">Original</string>
     <string name="encuadre_libre">Libre</string>
+    <string name="editor_emoji">Emoji</string>
+    <string name="emoji_titulo">Elige un emoji</string>
+    <string name="emoji_otro">Otro (usa el teclado de emojis)</string>
+    <string name="emoji_anadir">Añadir</string>
+    <string name="emoji_ayuda">Arrastra para mover, pellizca para cambiar el tamaño, mantén pulsado para borrar.</string>
     <string name="recorte_resumen">%1$s – %2$s · %3$s</string>
     <string name="exportar_titulo">Exportar</string>
     <string name="exportar_no_disponible">Este vídeo ya no está disponible</string>
