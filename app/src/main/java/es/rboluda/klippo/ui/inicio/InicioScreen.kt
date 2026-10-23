@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -27,6 +28,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -55,6 +58,7 @@ fun InicioScreen(viewModel: InicioViewModel = viewModel(factory = InicioViewMode
     val estadoMotor by viewModel.estadoMotor.collectAsStateWithLifecycle()
     val actualizando by viewModel.actualizando.collectAsStateWithLifecycle()
     val descargas by viewModel.descargas.collectAsStateWithLifecycle()
+    val diasMotor by viewModel.diasMotor.collectAsStateWithLifecycle()
     var url by rememberSaveable { mutableStateOf("") }
     var urlPendiente by rememberSaveable { mutableStateOf<String?>(null) }
     val snackbar = remember { SnackbarHostState() }
@@ -110,6 +114,11 @@ fun InicioScreen(viewModel: InicioViewModel = viewModel(factory = InicioViewMode
             // Barra fina mientras el motor arranca o se actualiza
             if (estadoMotor is EstadoMotor.Iniciando || actualizando) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            } else {
+                val dias = diasMotor
+                if (dias != null && dias > InicioViewModel.DIAS_MOTOR_ANTIGUO) {
+                    AvisoMotorAntiguo(dias, onActualizar = { viewModel.actualizarMotor() })
+                }
             }
             OutlinedTextField(
                 value = url,
@@ -150,11 +159,33 @@ fun InicioScreen(viewModel: InicioViewModel = viewModel(factory = InicioViewMode
                     contentPadding = PaddingValues(bottom = 16.dp),
                 ) {
                     items(descargas, key = { it.id }) { descarga ->
-                        FilaDescarga(descarga, onCancelar = { viewModel.cancelar(descarga.id) })
+                        FilaDescarga(
+                            descarga = descarga,
+                            actualizandoMotor = actualizando,
+                            onCancelar = { viewModel.cancelar(descarga.id) },
+                            onActualizarYReintentar = { viewModel.actualizarMotor(reintentar = descarga) },
+                        )
                     }
                 }
             }
         }
+    }
+}
+
+// Línea discreta cuando yt-dlp tiene más de un mes: las descargas empiezan a fallar
+@Composable
+private fun AvisoMotorAntiguo(dias: Int, onActualizar: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = pluralStringResource(R.plurals.motor_antiguo, dias, dias),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(onClick = onActualizar) { Text(stringResource(R.string.actualizar)) }
     }
 }
 

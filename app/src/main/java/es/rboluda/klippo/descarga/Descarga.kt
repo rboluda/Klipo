@@ -14,6 +14,8 @@ data class Descarga(
     val id: String,
     val url: String,
     val carpeta: File,
+    // Momento de inicio (ms desde epoch); ordena la lista
+    val creado: Long = System.currentTimeMillis(),
     val titulo: String? = null,
     val estado: EstadoDescarga = EstadoDescarga.Descargando,
     // De 0 a 1; negativo mientras aún no se sabe (analizando el enlace)

@@ -22,7 +22,12 @@ import es.rboluda.klippo.descarga.EstadoDescarga
 
 // Tarjeta de una descarga: título (o URL), estado y barra de progreso
 @Composable
-fun FilaDescarga(descarga: Descarga, onCancelar: () -> Unit) {
+fun FilaDescarga(
+    descarga: Descarga,
+    actualizandoMotor: Boolean,
+    onCancelar: () -> Unit,
+    onActualizarYReintentar: () -> Unit,
+) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -57,6 +62,16 @@ fun FilaDescarga(descarga: Descarga, onCancelar: () -> Unit) {
                 )
                 if (descarga.estado == EstadoDescarga.Descargando) {
                     TextButton(onClick = onCancelar) { Text(stringResource(R.string.cancelar)) }
+                }
+            }
+            // Las plataformas cambian a menudo: lo primero ante un fallo es actualizar yt-dlp
+            if (descarga.estado is EstadoDescarga.Fallida) {
+                TextButton(
+                    onClick = onActualizarYReintentar,
+                    enabled = !actualizandoMotor,
+                    modifier = Modifier.align(Alignment.End),
+                ) {
+                    Text(stringResource(R.string.descarga_actualizar_reintentar))
                 }
             }
         }

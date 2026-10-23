@@ -16,6 +16,12 @@
     <string name="motor_actualizado">Motor actualizado</string>
     <string name="motor_ya_al_dia">El motor ya está al día</string>
     <string name="motor_error_actualizar">No se pudo actualizar el motor</string>
+    <string name="actualizar">Actualizar</string>
+    <plurals name="motor_antiguo">
+        <item quantity="one">El motor tiene %1$d día y puede fallar</item>
+        <item quantity="other">El motor tiene %1$d días y puede fallar</item>
+    </plurals>
+    <string name="descarga_actualizar_reintentar">Actualizar motor y reintentar</string>
 
     <string name="cancelar">Cancelar</string>
     <string name="canal_progreso">Progreso de descargas</string>

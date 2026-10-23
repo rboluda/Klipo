@@ -9,6 +9,7 @@ import android.os.IBinder
 import android.os.SystemClock
 import com.yausername.youtubedl_android.YoutubeDL
 import es.rboluda.klippo.KlippoApp
+import es.rboluda.klippo.almacenamiento.MetaDescarga
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -45,9 +46,10 @@ class DescargaService : Service() {
         val descarga = Descarga(
             id = id,
             url = url,
-            carpeta = File(File(cacheDir, CARPETA_DESCARGAS), id),
+            carpeta = File(app.carpetaDescargas, id),
         )
         app.descargas.agregar(descarga)
+        MetaDescarga.escribir(descarga)
         // Hay que pasar a primer plano nada más arrancar (límite de 5 s del sistema)
         startForeground(
             Notificaciones.ID_PROGRESO,
@@ -73,6 +75,7 @@ class DescargaService : Service() {
                     titulo = app.motor.leerTitulo(descarga.carpeta),
                 )
             }
+            app.descargas.buscar(id)?.let { MetaDescarga.escribir(it) }
         } catch (e: YoutubeDL.CanceledException) {
             app.descargas.actualizar(id) { it.copy(estado = EstadoDescarga.Cancelada) }
             descarga.carpeta.deleteRecursively()

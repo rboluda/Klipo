@@ -22,8 +22,15 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 
 class InicioViewModel(private val app: KlippoApp) : ViewModel() {
 
@@ -60,22 +67,48 @@ class InicioViewModel(private val app: KlippoApp) : ViewModel() {
     private val _avisos = Channel<Int>(Channel.BUFFERED)
     val avisos = _avisos.receiveAsFlow()
 
-    fun actualizarMotor() {
+    // Días desde la publicación de la versión de yt-dlp (se calcula en local, sin red)
+    val diasMotor: StateFlow<Int?> = motor.estado
+        .map { (it as? EstadoMotor.Listo)?.version?.let(::diasDesdeVersion) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    // Si se indica [reintentar], tras actualizar se relanza esa descarga fallida
+    fun actualizarMotor(reintentar: Descarga? = null) {
         if (_actualizando.value) return
         _actualizando.value = true
         viewModelScope.launch {
-            @StringRes val aviso = when (motor.actualizar()) {
+            val resultado = motor.actualizar()
+            @StringRes val aviso = when (resultado) {
                 ResultadoActualizacion.ACTUALIZADO -> R.string.motor_actualizado
                 ResultadoActualizacion.YA_AL_DIA -> R.string.motor_ya_al_dia
                 ResultadoActualizacion.ERROR -> R.string.motor_error_actualizar
             }
             _actualizando.value = false
+            if (reintentar != null && resultado != ResultadoActualizacion.ERROR) {
+                app.descargas.eliminar(reintentar.id)
+                withContext(Dispatchers.IO) { reintentar.carpeta.deleteRecursively() }
+                descargar(reintentar.url)
+            }
             _avisos.send(aviso)
         }
     }
 
     companion object {
         private const val CLAVE_PERMISO_PEDIDO = "permiso_notificaciones_pedido"
+        const val DIAS_MOTOR_ANTIGUO = 30
+
+        // Las versiones de yt-dlp son fechas: 2026.10.20 (o 2026.10.20.123456 en nightly)
+        private val FECHA_VERSION = Regex("""^(\d{4})\.(\d{1,2})\.(\d{1,2})""")
+
+        private fun diasDesdeVersion(version: String): Int? {
+            val (anio, mes, dia) = FECHA_VERSION.find(version)?.destructured ?: return null
+            return try {
+                val fecha = LocalDate.of(anio.toInt(), mes.toInt(), dia.toInt())
+                ChronoUnit.DAYS.between(fecha, LocalDate.now()).toInt()
+            } catch (e: Exception) {
+                null
+            }
+        }
 
         val Factory = viewModelFactory {
             initializer { InicioViewModel(this[APPLICATION_KEY] as KlippoApp) }
