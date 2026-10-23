@@ -18,6 +18,9 @@ enum class Calidad(val alturaMax: Int?, @param:StringRes val etiqueta: Int) {
     P480(480, R.string.calidad_480),
 }
 
+// Cómo se muestran las descargas en Inicio
+enum class Vista { LISTA, MOSAICO }
+
 private val Context.almacen by preferencesDataStore(name = "ajustes")
 
 // Últimos ajustes usados: se aplican también a los enlaces recibidos con Compartir
@@ -33,5 +36,15 @@ class AjustesRepositorio(private val context: Context) {
 
     suspend fun guardarCalidad(calidad: Calidad) {
         context.almacen.edit { it[claveCalidad] = calidad.name }
+    }
+
+    private val claveVista = stringPreferencesKey("vista")
+
+    val vista: Flow<Vista> = context.almacen.data.map { prefs ->
+        prefs[claveVista]?.let { nombre -> Vista.entries.find { it.name == nombre } } ?: Vista.LISTA
+    }
+
+    suspend fun guardarVista(vista: Vista) {
+        context.almacen.edit { it[claveVista] = vista.name }
     }
 }

@@ -11,6 +11,7 @@ import com.yausername.youtubedl_android.YoutubeDL
 import es.rboluda.klippo.KlippoApp
 import es.rboluda.klippo.ajustes.Calidad
 import es.rboluda.klippo.almacenamiento.MetaDescarga
+import es.rboluda.klippo.almacenamiento.Miniaturas
 import es.rboluda.klippo.sesion.Sesiones
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +19,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
 
@@ -76,12 +78,14 @@ class DescargaService : Service() {
                 app.descargas.actualizar(id) { it.copy(progreso = progreso, etaSegundos = eta) }
                 ambito.launch { refrescarNotificacion(id, forzar = false) }
             }
+            val miniatura = withContext(Dispatchers.IO) { Miniaturas.obtener(descarga.carpeta, archivo) }
             app.descargas.actualizar(id) {
                 it.copy(
                     estado = EstadoDescarga.Completada,
                     progreso = 1f,
                     archivo = archivo,
                     titulo = app.motor.leerTitulo(descarga.carpeta),
+                    miniatura = miniatura,
                 )
             }
             app.descargas.buscar(id)?.let { MetaDescarga.escribir(it) }

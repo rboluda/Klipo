@@ -35,6 +35,8 @@ object MetaDescarga {
                 estado = EstadoDescarga.Completada,
                 progreso = 1f,
                 archivo = video,
+                // Las descargas anteriores a las miniaturas la generan aquí la primera vez
+                miniatura = Miniaturas.obtener(carpeta, video),
             )
         } catch (e: Exception) {
             null

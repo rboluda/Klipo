@@ -3,8 +3,12 @@ package es.rboluda.klippo.ui.inicio
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.Card
 import androidx.compose.material3.LinearProgressIndicator
@@ -46,63 +50,94 @@ fun FilaDescarga(
         else -> Modifier
     }
     Card(modifier = Modifier.fillMaxWidth().then(tocable)) {
-        Column(
+        Row(
             modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = descarga.titulo ?: descarga.url,
-                style = MaterialTheme.typography.titleSmall,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
+            MiniaturaVideo(
+                archivo = descarga.miniatura,
+                modifier = Modifier
+                    .size(width = 72.dp, height = 96.dp)
+                    .clip(RoundedCornerShape(8.dp)),
             )
-            if (descarga.estado == EstadoDescarga.Descargando) {
-                if (descarga.progreso < 0f) {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                } else {
-                    LinearProgressIndicator(
-                        progress = { descarga.progreso },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
                 Text(
-                    text = textoEstado(descarga, errorCompleto),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (descarga.estado is EstadoDescarga.Fallida) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    modifier = Modifier.weight(1f),
+                    text = descarga.titulo ?: descarga.url,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 if (descarga.estado == EstadoDescarga.Descargando) {
-                    TextButton(onClick = onCancelar) { Text(stringResource(R.string.cancelar)) }
-                }
-            }
-            val estado = descarga.estado
-            if (estado is EstadoDescarga.Fallida) {
-                // Si yt-dlp pide sesión y la plataforma la admite, se ofrece iniciarla
-                val plataforma = Plataforma.deUrl(descarga.url)
-                if (plataforma != null && pideSesion(estado.mensaje)) {
-                    TextButton(
-                        onClick = { onIniciarSesion(plataforma) },
-                        modifier = Modifier.align(Alignment.End),
-                    ) {
-                        Text(stringResource(R.string.sesion_iniciar, plataforma.nombre))
+                    if (descarga.progreso < 0f) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    } else {
+                        LinearProgressIndicator(
+                            progress = { descarga.progreso },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
                 }
-                // Las plataformas cambian a menudo: lo primero ante un fallo es actualizar yt-dlp
-                TextButton(
-                    onClick = onActualizarYReintentar,
-                    enabled = !actualizandoMotor,
-                    modifier = Modifier.align(Alignment.End),
-                ) {
-                    Text(stringResource(R.string.descarga_actualizar_reintentar))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = textoEstado(descarga, errorCompleto),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (descarga.estado is EstadoDescarga.Fallida) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (descarga.estado == EstadoDescarga.Descargando) {
+                        TextButton(onClick = onCancelar) { Text(stringResource(R.string.cancelar)) }
+                    }
+                }
+                val estado = descarga.estado
+                if (estado is EstadoDescarga.Fallida) {
+                    // Si yt-dlp pide sesión y la plataforma la admite, se ofrece iniciarla
+                    val plataforma = Plataforma.deUrl(descarga.url)
+                    if (plataforma != null && pideSesion(estado.mensaje)) {
+                        TextButton(
+                            onClick = { onIniciarSesion(plataforma) },
+                            modifier = Modifier.align(Alignment.End),
+                        ) {
+                            Text(stringResource(R.string.sesion_iniciar, plataforma.nombre))
+                        }
+                    }
+                    // Las plataformas cambian a menudo: lo primero ante un fallo es actualizar yt-dlp
+                    TextButton(
+                        onClick = onActualizarYReintentar,
+                        enabled = !actualizandoMotor,
+                        modifier = Modifier.align(Alignment.End),
+                    ) {
+                        Text(stringResource(R.string.descarga_actualizar_reintentar))
+                    }
                 }
             }
         }
+    }
+}
+
+// Ficha del modo mosaico (solo para descargas completadas): miniatura y título
+@Composable
+fun FichaMosaico(descarga: Descarga, onAbrir: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onAbrir)) {
+        MiniaturaVideo(
+            archivo = descarga.miniatura,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(3f / 4f),
+        )
+        Text(
+            text = descarga.titulo ?: descarga.url,
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(8.dp),
+        )
     }
 }
 

@@ -25,4 +25,5 @@ data class Descarga(
     val progreso: Float = -1f,
     val etaSegundos: Long = -1,
     val archivo: File? = null,
+    val miniatura: File? = null,
 )

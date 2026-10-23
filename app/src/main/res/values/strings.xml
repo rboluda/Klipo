@@ -12,6 +12,8 @@
     <string name="calidad_720">Hasta 720p</string>
     <string name="calidad_480">Hasta 480p</string>
     <string name="menu_opciones">Más opciones</string>
+    <string name="vista_mosaico">Ver en mosaico</string>
+    <string name="vista_lista">Ver en lista</string>
 
     <string name="motor_iniciando">Motor: preparando…</string>
     <string name="motor_version">Motor: yt-dlp %1$s</string>

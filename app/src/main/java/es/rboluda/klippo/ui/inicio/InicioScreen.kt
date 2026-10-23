@@ -13,6 +13,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as itemsGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -58,6 +62,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import es.rboluda.klippo.BuildConfig
 import es.rboluda.klippo.R
 import es.rboluda.klippo.ajustes.Calidad
+import es.rboluda.klippo.ajustes.Vista
+import es.rboluda.klippo.descarga.Descarga
+import es.rboluda.klippo.descarga.EstadoDescarga
 import es.rboluda.klippo.util.Enlaces
 import es.rboluda.klippo.descarga.EstadoMotor
 import es.rboluda.klippo.sesion.Plataforma
@@ -75,6 +82,7 @@ fun InicioScreen(
     val actualizando by viewModel.actualizando.collectAsStateWithLifecycle()
     val descargas by viewModel.descargas.collectAsStateWithLifecycle()
     val diasMotor by viewModel.diasMotor.collectAsStateWithLifecycle()
+    val vista by viewModel.vista.collectAsStateWithLifecycle()
     var url by rememberSaveable { mutableStateOf("") }
     var urlPendiente by rememberSaveable { mutableStateOf<String?>(null) }
     val sesiones by viewModel.sesiones.collectAsStateWithLifecycle()
@@ -181,6 +189,20 @@ fun InicioScreen(
                     }
                 },
                 actions = {
+                    // El icono muestra la vista a la que se cambia
+                    IconButton(onClick = viewModel::alternarVista) {
+                        if (vista == Vista.LISTA) {
+                            Icon(
+                                painterResource(R.drawable.ic_vista_mosaico),
+                                stringResource(R.string.vista_mosaico),
+                            )
+                        } else {
+                            Icon(
+                                painterResource(R.drawable.ic_vista_lista),
+                                stringResource(R.string.vista_lista),
+                            )
+                        }
+                    }
                     MenuOpciones(
                         estado = estadoMotor,
                         actualizando = actualizando,
@@ -243,20 +265,46 @@ fun InicioScreen(
                     )
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(bottom = 16.dp),
-                ) {
-                    items(descargas, key = { it.id }) { descarga ->
-                        FilaDescarga(
-                            descarga = descarga,
-                            actualizandoMotor = actualizando,
-                            onCancelar = { viewModel.cancelar(descarga.id) },
-                            onActualizarYReintentar = { viewModel.actualizarMotor(reintentar = descarga) },
-                            onIniciarSesion = iniciarSesion,
-                            onAbrir = { onAbrir(descarga.id) },
-                        )
+                val fila: @Composable (Descarga) -> Unit = { descarga ->
+                    FilaDescarga(
+                        descarga = descarga,
+                        actualizandoMotor = actualizando,
+                        onCancelar = { viewModel.cancelar(descarga.id) },
+                        onActualizarYReintentar = { viewModel.actualizarMotor(reintentar = descarga) },
+                        onIniciarSesion = iniciarSesion,
+                        onAbrir = { onAbrir(descarga.id) },
+                    )
+                }
+                when (vista) {
+                    Vista.LISTA -> LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp),
+                    ) {
+                        items(descargas, key = { it.id }) { fila(it) }
+                    }
+                    // En mosaico, las descargas en curso o con error ocupan toda la fila
+                    // (necesitan barra de progreso y botones); las completadas, una ficha
+                    Vista.MOSAICO -> LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = 140.dp),
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp),
+                    ) {
+                        itemsGrid(
+                            descargas,
+                            key = { it.id },
+                            span = { d ->
+                                GridItemSpan(if (d.estado == EstadoDescarga.Completada) 1 else maxLineSpan)
+                            },
+                        ) { descarga ->
+                            if (descarga.estado == EstadoDescarga.Completada) {
+                                FichaMosaico(descarga, onAbrir = { onAbrir(descarga.id) })
+                            } else {
+                                fila(descarga)
+                            }
+                        }
                     }
                 }
             }

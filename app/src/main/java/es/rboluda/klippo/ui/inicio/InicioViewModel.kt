@@ -14,6 +14,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import es.rboluda.klippo.KlippoApp
 import es.rboluda.klippo.R
 import es.rboluda.klippo.ajustes.Calidad
+import es.rboluda.klippo.ajustes.Vista
 import es.rboluda.klippo.descarga.Descarga
 import es.rboluda.klippo.descarga.DescargaService
 import es.rboluda.klippo.descarga.EstadoMotor
@@ -51,6 +52,15 @@ class InicioViewModel(private val app: KlippoApp) : ViewModel() {
 
     val ultimaCalidad: StateFlow<Calidad> = app.ajustes.calidad
         .stateIn(viewModelScope, SharingStarted.Eagerly, Calidad.MEJOR)
+
+    // Lista o mosaico; se recuerda entre aperturas
+    val vista: StateFlow<Vista> = app.ajustes.vista
+        .stateIn(viewModelScope, SharingStarted.Eagerly, Vista.LISTA)
+
+    fun alternarVista() {
+        val nueva = if (vista.value == Vista.LISTA) Vista.MOSAICO else Vista.LISTA
+        viewModelScope.launch { app.ajustes.guardarVista(nueva) }
+    }
 
     // Enlace recibido desde Compartir de otra app; la pantalla lo consume y lo descarga
     private val _urlCompartida = MutableStateFlow<String?>(null)
