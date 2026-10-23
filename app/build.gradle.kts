@@ -40,12 +40,24 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // El motor ejecuta binarios nativos desde disco: las .so deben extraerse al instalar
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
 }
 
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+
+    // Motor de descarga: yt-dlp (con Python) y FFmpeg empaquetados
+    implementation(libs.youtubedl.library)
+    implementation(libs.youtubedl.ffmpeg)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

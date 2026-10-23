@@ -5,4 +5,15 @@
     <string name="inicio_url_ayuda">YouTube, TikTok, X o Instagram</string>
     <string name="inicio_descargar">Descargar</string>
     <string name="inicio_lista_vacia">Aún no hay descargas</string>
+    <string name="menu_opciones">Más opciones</string>
+
+    <string name="motor_iniciando">Motor: preparando…</string>
+    <string name="motor_version">Motor: yt-dlp %1$s</string>
+    <string name="motor_version_desconocida">desconocida</string>
+    <string name="motor_error">Motor: error al iniciar</string>
+    <string name="motor_actualizar">Actualizar motor</string>
+    <string name="motor_actualizando">Actualizando motor…</string>
+    <string name="motor_actualizado">Motor actualizado</string>
+    <string name="motor_ya_al_dia">El motor ya está al día</string>
+    <string name="motor_error_actualizar">No se pudo actualizar el motor</string>
 </resources>
