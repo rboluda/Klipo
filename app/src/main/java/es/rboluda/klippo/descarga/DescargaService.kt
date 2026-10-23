@@ -10,6 +10,7 @@ import android.os.SystemClock
 import com.yausername.youtubedl_android.YoutubeDL
 import es.rboluda.klippo.KlippoApp
 import es.rboluda.klippo.almacenamiento.MetaDescarga
+import es.rboluda.klippo.sesion.Sesiones
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -62,7 +63,8 @@ class DescargaService : Service() {
     private suspend fun ejecutar(descarga: Descarga) {
         val id = descarga.id
         try {
-            val archivo = app.motor.descargar(id, descarga.url, descarga.carpeta) { progreso, eta ->
+            val cookies = Sesiones.cookiesPara(this, descarga.url)
+            val archivo = app.motor.descargar(id, descarga.url, descarga.carpeta, cookies) { progreso, eta ->
                 // Este callback llega desde el hilo del proceso de yt-dlp
                 app.descargas.actualizar(id) { it.copy(progreso = progreso, etaSegundos = eta) }
                 ambito.launch { refrescarNotificacion(id, forzar = false) }

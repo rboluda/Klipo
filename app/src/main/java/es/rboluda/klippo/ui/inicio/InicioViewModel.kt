@@ -18,6 +18,8 @@ import es.rboluda.klippo.descarga.DescargaService
 import es.rboluda.klippo.descarga.EstadoMotor
 import es.rboluda.klippo.descarga.MotorDescarga
 import es.rboluda.klippo.descarga.ResultadoActualizacion
+import es.rboluda.klippo.sesion.Plataforma
+import es.rboluda.klippo.sesion.Sesiones
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -64,8 +66,22 @@ class InicioViewModel(private val app: KlippoApp) : ViewModel() {
     val actualizando: StateFlow<Boolean> = _actualizando.asStateFlow()
 
     // Mensajes puntuales para el snackbar
-    private val _avisos = Channel<Int>(Channel.BUFFERED)
+    private val _avisos = Channel<String>(Channel.BUFFERED)
     val avisos = _avisos.receiveAsFlow()
+
+    // Plataformas con sesión iniciada (se refresca al volver a la pantalla)
+    private val _sesiones = MutableStateFlow<Set<Plataforma>>(emptySet())
+    val sesiones: StateFlow<Set<Plataforma>> = _sesiones.asStateFlow()
+
+    fun refrescarSesiones() {
+        _sesiones.value = Plataforma.entries.filter { Sesiones.tieneSesion(app, it) }.toSet()
+    }
+
+    fun cerrarSesion(plataforma: Plataforma) {
+        Sesiones.cerrar(app, plataforma)
+        refrescarSesiones()
+        _avisos.trySend(app.getString(R.string.sesion_cerrada, plataforma.nombre))
+    }
 
     // Días desde la publicación de la versión de yt-dlp (se calcula en local, sin red)
     val diasMotor: StateFlow<Int?> = motor.estado
@@ -89,7 +105,7 @@ class InicioViewModel(private val app: KlippoApp) : ViewModel() {
                 withContext(Dispatchers.IO) { reintentar.carpeta.deleteRecursively() }
                 descargar(reintentar.url)
             }
-            _avisos.send(aviso)
+            _avisos.send(app.getString(aviso))
         }
     }
 

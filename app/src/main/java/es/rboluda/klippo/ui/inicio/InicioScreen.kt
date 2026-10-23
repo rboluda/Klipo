@@ -19,6 +19,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -39,17 +40,20 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import es.rboluda.klippo.R
 import es.rboluda.klippo.descarga.EstadoMotor
+import es.rboluda.klippo.sesion.Plataforma
+import es.rboluda.klippo.sesion.SesionActivity
 
 // Pantalla de inicio: campo de URL y lista de descargas
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,8 +65,16 @@ fun InicioScreen(viewModel: InicioViewModel = viewModel(factory = InicioViewMode
     val diasMotor by viewModel.diasMotor.collectAsStateWithLifecycle()
     var url by rememberSaveable { mutableStateOf("") }
     var urlPendiente by rememberSaveable { mutableStateOf<String?>(null) }
+    val sesiones by viewModel.sesiones.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
-    val recursos = LocalResources.current
+    val context = LocalContext.current
+    val iniciarSesion = { p: Plataforma -> context.startActivity(SesionActivity.intent(context, p)) }
+
+    // Al volver de la pantalla de login, la sesión puede haber cambiado
+    LifecycleResumeEffect(Unit) {
+        viewModel.refrescarSesiones()
+        onPauseOrDispose { }
+    }
 
     // Tras responder al permiso (sí o no) se lanza la descarga igualmente
     val pedirPermiso = rememberLauncherForActivityResult(
@@ -86,7 +98,7 @@ fun InicioScreen(viewModel: InicioViewModel = viewModel(factory = InicioViewMode
     }
 
     LaunchedEffect(Unit) {
-        viewModel.avisos.collect { snackbar.showSnackbar(recursos.getString(it)) }
+        viewModel.avisos.collect { snackbar.showSnackbar(it) }
     }
 
     Scaffold(
@@ -94,10 +106,13 @@ fun InicioScreen(viewModel: InicioViewModel = viewModel(factory = InicioViewMode
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
-                    MenuMotor(
+                    MenuOpciones(
                         estado = estadoMotor,
                         actualizando = actualizando,
+                        sesiones = sesiones,
                         onActualizar = viewModel::actualizarMotor,
+                        onIniciarSesion = iniciarSesion,
+                        onCerrarSesion = viewModel::cerrarSesion,
                     )
                 },
             )
@@ -164,6 +179,7 @@ fun InicioScreen(viewModel: InicioViewModel = viewModel(factory = InicioViewMode
                             actualizandoMotor = actualizando,
                             onCancelar = { viewModel.cancelar(descarga.id) },
                             onActualizarYReintentar = { viewModel.actualizarMotor(reintentar = descarga) },
+                            onIniciarSesion = iniciarSesion,
                         )
                     }
                 }
@@ -189,12 +205,15 @@ private fun AvisoMotorAntiguo(dias: Int, onActualizar: () -> Unit) {
     }
 }
 
-// Menú ⋮ con la versión de yt-dlp y la opción de actualizarlo
+// Menú ⋮: versión de yt-dlp, actualizarlo y sesiones de Instagram/X
 @Composable
-private fun MenuMotor(
+private fun MenuOpciones(
     estado: EstadoMotor,
     actualizando: Boolean,
+    sesiones: Set<Plataforma>,
     onActualizar: () -> Unit,
+    onIniciarSesion: (Plataforma) -> Unit,
+    onCerrarSesion: (Plataforma) -> Unit,
 ) {
     var abierto by remember { mutableStateOf(false) }
 
@@ -228,5 +247,23 @@ private fun MenuMotor(
             },
             enabled = estado is EstadoMotor.Listo && !actualizando,
         )
+        HorizontalDivider()
+        for (plataforma in Plataforma.entries) {
+            val conSesion = plataforma in sesiones
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        stringResource(
+                            if (conSesion) R.string.sesion_cerrar else R.string.sesion_iniciar,
+                            plataforma.nombre,
+                        )
+                    )
+                },
+                onClick = {
+                    abierto = false
+                    if (conSesion) onCerrarSesion(plataforma) else onIniciarSesion(plataforma)
+                },
+            )
+        }
     }
 }

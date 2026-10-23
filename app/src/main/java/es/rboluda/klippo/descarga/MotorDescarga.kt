@@ -52,6 +52,8 @@ class MotorDescarga(private val context: Context) {
         id: String,
         url: String,
         carpeta: File,
+        // Cookies de sesión (Instagram, X) si el usuario ha iniciado sesión
+        cookies: File?,
         alProgreso: (progreso: Float, etaSegundos: Long) -> Unit,
     ): File = withContext(Dispatchers.IO) {
         check(esperarListo()) { "El motor no está listo" }
@@ -63,6 +65,8 @@ class MotorDescarga(private val context: Context) {
             addOption("--no-playlist")
             addOption("--no-mtime")
             addOption("-o", File(carpeta, "video.%(ext)s").absolutePath)
+            // yt-dlp las lee y, al terminar, guarda en el mismo archivo las que se renueven
+            cookies?.let { addOption("--cookies", it.absolutePath) }
             // Guarda el título al terminar (after_move no activa el modo simulación)
             addCommands(
                 listOf("--print-to-file", "after_move:%(title)s", File(carpeta, ARCHIVO_TITULO).absolutePath)
