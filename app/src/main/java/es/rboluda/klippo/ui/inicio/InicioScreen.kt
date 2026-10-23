@@ -1,11 +1,18 @@
 package es.rboluda.klippo.ui.inicio
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -30,7 +37,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -41,19 +48,41 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import es.rboluda.klippo.R
 import es.rboluda.klippo.descarga.EstadoMotor
 
-// Pantalla de inicio: campo de URL y lista de descargas.
-// La descarga llega en el paso 3; de momento solo el menú del motor funciona.
+// Pantalla de inicio: campo de URL y lista de descargas
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InicioScreen(viewModel: InicioViewModel = viewModel(factory = InicioViewModel.Factory)) {
     val estadoMotor by viewModel.estadoMotor.collectAsStateWithLifecycle()
     val actualizando by viewModel.actualizando.collectAsStateWithLifecycle()
+    val descargas by viewModel.descargas.collectAsStateWithLifecycle()
     var url by rememberSaveable { mutableStateOf("") }
+    var urlPendiente by rememberSaveable { mutableStateOf<String?>(null) }
     val snackbar = remember { SnackbarHostState() }
-    val context = LocalContext.current
+    val recursos = LocalResources.current
+
+    // Tras responder al permiso (sí o no) se lanza la descarga igualmente
+    val pedirPermiso = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        urlPendiente?.let(viewModel::descargar)
+        urlPendiente = null
+    }
+
+    val empezarDescarga = {
+        if (url.isNotBlank() && estadoMotor is EstadoMotor.Listo) {
+            if (viewModel.debePedirPermisoNotificaciones()) {
+                viewModel.marcarPermisoPedido()
+                urlPendiente = url
+                pedirPermiso.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                viewModel.descargar(url)
+            }
+            url = ""
+        }
+    }
 
     LaunchedEffect(Unit) {
-        viewModel.avisos.collect { snackbar.showSnackbar(context.getString(it)) }
+        viewModel.avisos.collect { snackbar.showSnackbar(recursos.getString(it)) }
     }
 
     Scaffold(
@@ -93,25 +122,37 @@ fun InicioScreen(viewModel: InicioViewModel = viewModel(factory = InicioViewMode
                     keyboardType = KeyboardType.Uri,
                     imeAction = ImeAction.Go,
                 ),
+                keyboardActions = KeyboardActions(onGo = { empezarDescarga() }),
             )
             Button(
-                onClick = { /* Paso 3: lanzar la descarga */ },
+                onClick = empezarDescarga,
                 enabled = url.isNotBlank() && estadoMotor is EstadoMotor.Listo,
                 modifier = Modifier.align(Alignment.End),
             ) {
                 Text(stringResource(R.string.inicio_descargar))
             }
 
-            // Lista de descargas (vacía hasta el paso 4)
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(R.string.inicio_lista_vacia),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            if (descargas.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(R.string.inicio_lista_vacia),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp),
+                ) {
+                    items(descargas, key = { it.id }) { descarga ->
+                        FilaDescarga(descarga, onCancelar = { viewModel.cancelar(descarga.id) })
+                    }
+                }
             }
         }
     }
