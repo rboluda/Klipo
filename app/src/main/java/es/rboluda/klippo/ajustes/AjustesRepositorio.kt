@@ -3,6 +3,7 @@ package es.rboluda.klippo.ajustes
 import android.content.Context
 import androidx.annotation.StringRes
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import es.rboluda.klippo.R
@@ -46,5 +47,15 @@ class AjustesRepositorio(private val context: Context) {
 
     suspend fun guardarVista(vista: Vista) {
         context.almacen.edit { it[claveVista] = vista.name }
+    }
+
+    // Momento de la última consulta a GitHub por actualizaciones (ms desde epoch)
+    private val claveUltimaComprobacion = longPreferencesKey("ultima_comprobacion")
+
+    suspend fun ultimaComprobacion(): Long =
+        context.almacen.data.map { it[claveUltimaComprobacion] ?: 0L }.first()
+
+    suspend fun guardarUltimaComprobacion(momento: Long) {
+        context.almacen.edit { it[claveUltimaComprobacion] = momento }
     }
 }

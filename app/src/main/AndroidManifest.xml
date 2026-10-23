@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Instalar las actualizaciones descargadas de GitHub (el usuario confirma cada una) -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:name=".KlippoApp"
@@ -49,6 +51,10 @@
 
         <receiver
             android:name=".almacenamiento.GuardarEnGaleriaReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".actualizacion.InstalacionReceiver"
             android:exported="false" />
 
         <service

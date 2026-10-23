@@ -31,6 +31,14 @@
     </plurals>
     <string name="descarga_actualizar_reintentar">Actualizar motor y reintentar</string>
 
+    <string name="actualizacion_buscar">Buscar actualizaciones de Klippo</string>
+    <string name="actualizacion_al_dia">Tienes la última versión de Klippo</string>
+    <string name="actualizacion_error_comprobar">No se pudo comprobar si hay versión nueva</string>
+    <string name="actualizacion_disponible">Nueva versión de Klippo: %1$s</string>
+    <string name="actualizacion_descargando">Descargando actualización… %1$d %%</string>
+    <string name="actualizacion_error">Error al actualizar: %1$s</string>
+    <string name="actualizacion_error_instalar">No se pudo instalar la actualización. %1$s</string>
+
     <string name="sesion_iniciar">Iniciar sesión en %1$s</string>
     <string name="sesion_cerrar">Cerrar sesión de %1$s</string>
     <string name="sesion_listo">Listo</string>

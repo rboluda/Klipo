@@ -42,8 +42,24 @@ android {
         }
     }
 
+    // Firma de las releases publicadas en GitHub. Las claves viven fuera del repo, en
+    // ~/.gradle/gradle.properties (KLIPPO_KEYSTORE, KLIPPO_KEYSTORE_PASSWORD, KLIPPO_KEY_ALIAS,
+    // KLIPPO_KEY_PASSWORD). Sin ellas, la release sale sin firmar y no se puede instalar.
+    val keystore = providers.gradleProperty("KLIPPO_KEYSTORE").orNull
+    signingConfigs {
+        if (keystore != null) {
+            create("release") {
+                storeFile = file(keystore)
+                storePassword = providers.gradleProperty("KLIPPO_KEYSTORE_PASSWORD").get()
+                keyAlias = providers.gradleProperty("KLIPPO_KEY_ALIAS").get()
+                keyPassword = providers.gradleProperty("KLIPPO_KEY_PASSWORD").get()
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (keystore != null) signingConfig = signingConfigs.getByName("release")
             // Sin minificar por ahora; se revisará cuando el motor esté integrado
             isMinifyEnabled = false
             proguardFiles(
@@ -72,19 +88,24 @@ android {
     }
 }
 
-// Copia el APK de depuración a <proyecto>/apk/ con la versión en el nombre
+// Copia el APK a <proyecto>/apk/ con la versión en el nombre
 // (klippo-0.1.0-20261023.1305-debug.apk), para que el móvil no confunda archivos.
-// Sync deja en esa carpeta solo el último.
-val copiarApkDebug = tasks.register<Sync>("copiarApkDebug") {
-    // Copia local: la configuration cache no admite referencias al script dentro de la tarea
-    val nombreApk = "klippo-$nombreVersion-debug.apk"
-    from(layout.buildDirectory.dir("outputs/apk/debug")) {
-        include("*.apk")
-        rename { nombreApk }
+// Sync deja en esa carpeta solo el último de cada tipo (debug / release).
+listOf("debug", "release").forEach { tipo ->
+    val otro = if (tipo == "debug") "release" else "debug"
+    val copiar = tasks.register<Sync>("copiarApk${tipo.replaceFirstChar { it.uppercase() }}") {
+        // Copia local: la configuration cache no admite referencias al script dentro de la tarea
+        val nombreApk = "klippo-$nombreVersion-$tipo.apk"
+        from(layout.buildDirectory.dir("outputs/apk/$tipo")) {
+            include("*.apk")
+            rename { nombreApk }
+        }
+        into(rootProject.layout.projectDirectory.dir("apk"))
+        preserve { include("*-$otro.apk") }
     }
-    into(rootProject.layout.projectDirectory.dir("apk"))
+    tasks.matching { it.name == "assemble${tipo.replaceFirstChar { it.uppercase() }}" }
+        .configureEach { finalizedBy(copiar) }
 }
-tasks.matching { it.name == "assembleDebug" }.configureEach { finalizedBy(copiarApkDebug) }
 
 dependencies {
     implementation(libs.androidx.core.ktx)

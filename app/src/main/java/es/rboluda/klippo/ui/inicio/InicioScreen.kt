@@ -23,6 +23,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -61,6 +63,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import es.rboluda.klippo.BuildConfig
 import es.rboluda.klippo.R
+import es.rboluda.klippo.actualizacion.EstadoActualizacion
+import es.rboluda.klippo.actualizacion.VersionNueva
 import es.rboluda.klippo.ajustes.Calidad
 import es.rboluda.klippo.ajustes.Vista
 import es.rboluda.klippo.descarga.Descarga
@@ -83,6 +87,7 @@ fun InicioScreen(
     val descargas by viewModel.descargas.collectAsStateWithLifecycle()
     val diasMotor by viewModel.diasMotor.collectAsStateWithLifecycle()
     val vista by viewModel.vista.collectAsStateWithLifecycle()
+    val actualizacion by viewModel.actualizacion.collectAsStateWithLifecycle()
     var url by rememberSaveable { mutableStateOf("") }
     var urlPendiente by rememberSaveable { mutableStateOf<String?>(null) }
     val sesiones by viewModel.sesiones.collectAsStateWithLifecycle()
@@ -210,6 +215,11 @@ fun InicioScreen(
                         onActualizar = viewModel::actualizarMotor,
                         onIniciarSesion = iniciarSesion,
                         onCerrarSesion = viewModel::cerrarSesion,
+                        onBuscarActualizaciones = if (viewModel.actualizacionesActivas) {
+                            viewModel::buscarActualizaciones
+                        } else {
+                            null
+                        },
                     )
                 },
             )
@@ -232,6 +242,7 @@ fun InicioScreen(
                     AvisoMotorAntiguo(dias, onActualizar = { viewModel.actualizarMotor() })
                 }
             }
+            AvisoActualizacion(actualizacion, onActualizar = viewModel::actualizarApp)
             OutlinedTextField(
                 value = url,
                 onValueChange = { url = it },
@@ -346,6 +357,50 @@ private fun DialogoCalidad(
     )
 }
 
+// Aviso de versión nueva de Klippo en GitHub, con su descarga y los errores
+@Composable
+private fun AvisoActualizacion(estado: EstadoActualizacion, onActualizar: (VersionNueva) -> Unit) {
+    if (estado == EstadoActualizacion.Ninguna) return
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+    ) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            when (estado) {
+                is EstadoActualizacion.Disponible -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.actualizacion_disponible, estado.nueva.version),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = { onActualizar(estado.nueva) }) {
+                        Text(stringResource(R.string.actualizar))
+                    }
+                }
+                is EstadoActualizacion.Descargando -> {
+                    Text(
+                        stringResource(R.string.actualizacion_descargando, (estado.progreso * 100).toInt()),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    LinearProgressIndicator(progress = { estado.progreso }, modifier = Modifier.fillMaxWidth())
+                }
+                is EstadoActualizacion.Error -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.actualizacion_error, estado.mensaje),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = { onActualizar(estado.nueva) }) {
+                        Text(stringResource(R.string.reintentar))
+                    }
+                }
+                EstadoActualizacion.Ninguna -> Unit
+            }
+        }
+    }
+}
+
 // Línea discreta cuando yt-dlp tiene más de un mes: las descargas empiezan a fallar
 @Composable
 private fun AvisoMotorAntiguo(dias: Int, onActualizar: () -> Unit) {
@@ -372,6 +427,8 @@ private fun MenuOpciones(
     onActualizar: () -> Unit,
     onIniciarSesion: (Plataforma) -> Unit,
     onCerrarSesion: (Plataforma) -> Unit,
+    // null en las compilaciones de depuración, que no se pueden actualizar desde GitHub
+    onBuscarActualizaciones: (() -> Unit)?,
 ) {
     var abierto by remember { mutableStateOf(false) }
 
@@ -420,6 +477,16 @@ private fun MenuOpciones(
                 onClick = {
                     abierto = false
                     if (conSesion) onCerrarSesion(plataforma) else onIniciarSesion(plataforma)
+                },
+            )
+        }
+        onBuscarActualizaciones?.let { buscar ->
+            HorizontalDivider()
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.actualizacion_buscar)) },
+                onClick = {
+                    abierto = false
+                    buscar()
                 },
             )
         }

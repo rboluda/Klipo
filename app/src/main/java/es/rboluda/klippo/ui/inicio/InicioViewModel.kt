@@ -13,6 +13,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import es.rboluda.klippo.KlippoApp
 import es.rboluda.klippo.R
+import es.rboluda.klippo.actualizacion.EstadoActualizacion
+import es.rboluda.klippo.actualizacion.VersionNueva
 import es.rboluda.klippo.ajustes.Calidad
 import es.rboluda.klippo.ajustes.Vista
 import es.rboluda.klippo.descarga.Descarga
@@ -52,6 +54,25 @@ class InicioViewModel(private val app: KlippoApp) : ViewModel() {
 
     val ultimaCalidad: StateFlow<Calidad> = app.ajustes.calidad
         .stateIn(viewModelScope, SharingStarted.Eagerly, Calidad.MEJOR)
+
+    // Actualizaciones de la app desde GitHub Releases (solo en releases firmadas)
+    val actualizacion: StateFlow<EstadoActualizacion> = app.actualizador.estado
+    val actualizacionesActivas: Boolean = app.actualizador.activo
+
+    fun buscarActualizaciones() {
+        viewModelScope.launch {
+            val texto = try {
+                if (app.actualizador.comprobar() == null) app.getString(R.string.actualizacion_al_dia) else null
+            } catch (e: Exception) {
+                app.getString(R.string.actualizacion_error_comprobar)
+            }
+            texto?.let { _avisos.send(it) }
+        }
+    }
+
+    fun actualizarApp(nueva: VersionNueva) {
+        viewModelScope.launch { app.actualizador.descargarEInstalar(nueva) }
+    }
 
     // Lista o mosaico; se recuerda entre aperturas
     val vista: StateFlow<Vista> = app.ajustes.vista

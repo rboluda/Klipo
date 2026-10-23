@@ -1,6 +1,7 @@
 package es.rboluda.klippo
 
 import android.app.Application
+import es.rboluda.klippo.actualizacion.Actualizador
 import es.rboluda.klippo.ajustes.AjustesRepositorio
 import es.rboluda.klippo.almacenamiento.LimpiezaCache
 import es.rboluda.klippo.descarga.DescargaService
@@ -26,6 +27,8 @@ class KlippoApp : Application() {
 
     val ajustes by lazy { AjustesRepositorio(this) }
 
+    val actualizador by lazy { Actualizador(this, ajustes) }
+
     val carpetaDescargas: File get() = File(cacheDir, DescargaService.CARPETA_DESCARGAS)
 
     override fun onCreate() {
@@ -35,11 +38,13 @@ class KlippoApp : Application() {
         motor.iniciar(ambito)
     }
 
-    // Se llama cada vez que la app pasa a primer plano: borra lo antiguo y recarga la lista
+    // Se llama cada vez que la app pasa a primer plano: borra lo antiguo, recarga la lista
+    // y, como mucho una vez al día, mira si hay versión nueva en GitHub
     fun limpiarYCargar() {
         ambito.launch(Dispatchers.IO) {
             LimpiezaCache.limpiar(cacheDir, carpetaDescargas, descargas.idsActivos())
             descargas.sincronizar(carpetaDescargas)
         }
+        ambito.launch { actualizador.comprobarSiToca() }
     }
 }
