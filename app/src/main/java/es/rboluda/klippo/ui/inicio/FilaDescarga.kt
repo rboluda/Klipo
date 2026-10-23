@@ -95,6 +95,13 @@ fun FilaDescarga(
                         TextButton(onClick = onCancelar) { Text(stringResource(R.string.cancelar)) }
                     }
                 }
+                if (descarga.estado == EstadoDescarga.Completada) {
+                    AccionesRapidas(
+                        descarga = descarga,
+                        onEditar = onAbrir,
+                        modifier = Modifier.align(Alignment.End),
+                    )
+                }
                 val estado = descarga.estado
                 if (estado is EstadoDescarga.Fallida) {
                     // Si yt-dlp pide sesión y la plataforma la admite, se ofrece iniciarla
@@ -136,7 +143,12 @@ fun FichaMosaico(descarga: Descarga, onAbrir: () -> Unit) {
             style = MaterialTheme.typography.bodySmall,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(8.dp),
+            modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp),
+        )
+        AccionesRapidas(
+            descarga = descarga,
+            onEditar = onAbrir,
+            modifier = Modifier.align(Alignment.End),
         )
     }
 }

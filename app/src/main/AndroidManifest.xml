@@ -8,6 +8,12 @@
     <!-- Instalar las actualizaciones descargadas de GitHub (el usuario confirma cada una) -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!-- Para saber si WhatsApp está instalado (acceso directo "enviar por WhatsApp") -->
+    <queries>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+    </queries>
+
     <application
         android:name=".KlippoApp"
         android:allowBackup="false"

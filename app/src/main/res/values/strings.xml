@@ -67,6 +67,8 @@
     <string name="exportar_error">No se pudo generar el vídeo: %1$s</string>
     <string name="exportar_pista_galeria">Para guardarlo en la galería, pulsa Compartir y elige «Guardar en galería».</string>
     <string name="compartir">Compartir</string>
+    <string name="accion_whatsapp">Enviar por WhatsApp</string>
+    <string name="accion_editar">Editar</string>
     <string name="galeria_guardar">Guardar en galería</string>
     <string name="galeria_guardado">Guardado en Movies/Klippo</string>
     <string name="galeria_error">No se pudo guardar en la galería</string>

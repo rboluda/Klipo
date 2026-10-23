@@ -15,9 +15,32 @@ import java.io.File
 // Comparte un vídeo de la caché con el share sheet del sistema
 object Compartir {
 
+    // WhatsApp normal y Business (declarados en <queries> del manifest para poder detectarlos)
+    private val PAQUETES_WHATSAPP = listOf("com.whatsapp", "com.whatsapp.w4b")
+
     fun video(context: Context, video: File, titulo: String?) {
+        val selector = Intent.createChooser(envio(context, video, titulo), null)
+        // Android 14+: "Guardar en galería" aparece como acción propia dentro del share sheet
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            selector.putExtra(Intent.EXTRA_CHOOSER_CUSTOM_ACTIONS, arrayOf(accionGuardar(context, video)))
+        }
+        context.startActivity(selector)
+    }
+
+    // Paquete de WhatsApp instalado, o null si no hay ninguno
+    fun whatsapp(context: Context): String? = PAQUETES_WHATSAPP.firstOrNull { paquete ->
+        runCatching { context.packageManager.getPackageInfo(paquete, 0) }.isSuccess
+    }
+
+    // Envía el vídeo directamente a WhatsApp (se elige el chat dentro de WhatsApp)
+    fun aWhatsApp(context: Context, video: File, titulo: String?) {
+        val paquete = whatsapp(context) ?: return
+        context.startActivity(envio(context, video, titulo).setPackage(paquete))
+    }
+
+    private fun envio(context: Context, video: File, titulo: String?): Intent {
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.archivos", video)
-        val envio = Intent(Intent.ACTION_SEND).apply {
+        return Intent(Intent.ACTION_SEND).apply {
             type = "video/mp4"
             putExtra(Intent.EXTRA_STREAM, uri)
             titulo?.let { putExtra(Intent.EXTRA_TITLE, it) }
@@ -25,12 +48,6 @@ object Compartir {
             clipData = ClipData.newRawUri(titulo, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        val selector = Intent.createChooser(envio, null)
-        // Android 14+: "Guardar en galería" aparece como acción propia dentro del share sheet
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            selector.putExtra(Intent.EXTRA_CHOOSER_CUSTOM_ACTIONS, arrayOf(accionGuardar(context, video)))
-        }
-        context.startActivity(selector)
     }
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
