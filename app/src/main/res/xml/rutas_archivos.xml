@@ -2,4 +2,5 @@
 <!-- Carpetas de la caché que se pueden compartir con otras apps mediante FileProvider -->
 <paths>
     <cache-path name="descargas" path="descargas/" />
+    <cache-path name="exportaciones" path="exportaciones/" />
 </paths>

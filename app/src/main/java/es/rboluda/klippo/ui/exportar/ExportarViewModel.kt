@@ -13,16 +13,17 @@ import es.rboluda.klippo.KlippoApp
 import es.rboluda.klippo.R
 import es.rboluda.klippo.almacenamiento.GuardarEnGaleria
 import es.rboluda.klippo.descarga.Descarga
+import es.rboluda.klippo.edicion.Exportacion
+import es.rboluda.klippo.edicion.ParametrosEdicion
+import es.rboluda.klippo.edicion.Recorte
 import es.rboluda.klippo.ui.Rutas
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -36,13 +37,29 @@ data class InfoVideo(
     val miniatura: Bitmap?,
 )
 
+sealed interface EstadoExportacion {
+    // FFmpeg trabajando; progreso de 0 a 1
+    data class Generando(val progreso: Float) : EstadoExportacion
+    data class Lista(val archivo: File) : EstadoExportacion
+    data class Error(val mensaje: String) : EstadoExportacion
+    data object NoDisponible : EstadoExportacion
+}
+
 class ExportarViewModel(private val app: KlippoApp, estado: SavedStateHandle) : ViewModel() {
 
     private val id: String = checkNotNull(estado[Rutas.ARG_ID])
+    private val parametros = ParametrosEdicion(
+        recorte = run {
+            val inicio = estado.get<Long>(Rutas.ARG_INICIO) ?: -1L
+            val fin = estado.get<Long>(Rutas.ARG_FIN) ?: -1L
+            if (inicio >= 0 && fin > inicio) Recorte(inicio, fin) else null
+        },
+    )
 
-    val descarga: StateFlow<Descarga?> = app.descargas.descargas
-        .map { lista -> lista.find { it.id == id } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, app.descargas.buscar(id))
+    val descarga: Descarga? = app.descargas.buscar(id)
+
+    private val _estado = MutableStateFlow<EstadoExportacion>(EstadoExportacion.Generando(0f))
+    val estadoExportacion: StateFlow<EstadoExportacion> = _estado.asStateFlow()
 
     private val _info = MutableStateFlow<InfoVideo?>(null)
     val info: StateFlow<InfoVideo?> = _info.asStateFlow()
@@ -53,15 +70,47 @@ class ExportarViewModel(private val app: KlippoApp, estado: SavedStateHandle) : 
     private val _avisos = Channel<String>(Channel.BUFFERED)
     val avisos = _avisos.receiveAsFlow()
 
+    private var trabajo: Job? = null
+
     init {
-        app.descargas.buscar(id)?.archivo?.let { archivo ->
-            viewModelScope.launch { _info.value = leerInfo(archivo) }
+        generar()
+    }
+
+    // Sin cambios se usa el vídeo descargado tal cual; con cambios, FFmpeg genera uno nuevo.
+    // Si se sale de la pantalla, viewModelScope cancela la exportación y mata FFmpeg.
+    fun generar() {
+        val original = descarga?.archivo?.takeIf { it.exists() }
+        if (original == null) {
+            _estado.value = EstadoExportacion.NoDisponible
+            return
+        }
+        trabajo?.cancel()
+        trabajo = viewModelScope.launch {
+            _estado.value = EstadoExportacion.Generando(0f)
+            val archivo = if (!parametros.hayCambios) {
+                original
+            } else {
+                try {
+                    // FFmpeg se extrae al arrancar el motor: hay que esperar a que esté listo
+                    check(app.motor.esperarListo()) { app.getString(R.string.motor_error) }
+                    Exportacion.exportar(app, id, original, parametros) { progreso ->
+                        _estado.value = EstadoExportacion.Generando(progreso)
+                    }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    _estado.value = EstadoExportacion.Error(e.message ?: e.javaClass.simpleName)
+                    return@launch
+                }
+            }
+            _info.value = leerInfo(archivo)
+            _estado.value = EstadoExportacion.Lista(archivo)
         }
     }
 
     // Solo Android 13: en 14+ se guarda desde la acción del share sheet
     fun guardarEnGaleria() {
-        val archivo = descarga.value?.archivo ?: return
+        val archivo = (_estado.value as? EstadoExportacion.Lista)?.archivo ?: return
         if (_guardando.value) return
         _guardando.value = true
         viewModelScope.launch {
@@ -91,7 +140,7 @@ class ExportarViewModel(private val app: KlippoApp, estado: SavedStateHandle) : 
                 ancho = ancho,
                 alto = alto,
                 bytes = archivo.length(),
-                miniatura = lector.getFrameAtTime(1_000_000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC),
+                miniatura = lector.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC),
             )
         } catch (e: Exception) {
             null

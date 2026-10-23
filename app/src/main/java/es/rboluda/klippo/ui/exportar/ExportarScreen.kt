@@ -20,6 +20,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -53,7 +54,8 @@ fun ExportarScreen(
     onVolver: () -> Unit,
     viewModel: ExportarViewModel = viewModel(factory = ExportarViewModel.Factory),
 ) {
-    val descarga by viewModel.descarga.collectAsStateWithLifecycle()
+    val descarga = viewModel.descarga
+    val estado by viewModel.estadoExportacion.collectAsStateWithLifecycle()
     val info by viewModel.info.collectAsStateWithLifecycle()
     val guardando by viewModel.guardando.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
@@ -79,14 +81,14 @@ fun ExportarScreen(
         snackbarHost = { SnackbarHost(snackbar) },
     ) { relleno ->
         val actual = descarga
-        val archivo = actual?.archivo
-        if (actual == null || archivo == null || !archivo.exists()) {
+        if (actual == null || estado == EstadoExportacion.NoDisponible) {
             // La caché se limpia cada hora: el vídeo puede haber desaparecido
             Box(Modifier.fillMaxSize().padding(relleno), contentAlignment = Alignment.Center) {
                 Text(stringResource(R.string.exportar_no_disponible))
             }
             return@Scaffold
         }
+        val archivo = (estado as? EstadoExportacion.Lista)?.archivo
 
         Column(
             modifier = Modifier
@@ -110,8 +112,29 @@ fun ExportarScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            when (val e = estado) {
+                is EstadoExportacion.Generando -> {
+                    Text(
+                        text = stringResource(R.string.exportar_generando, (e.progreso * 100).toInt()),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    LinearProgressIndicator(progress = { e.progreso }, modifier = Modifier.fillMaxWidth())
+                }
+                is EstadoExportacion.Error -> {
+                    Text(
+                        text = stringResource(R.string.exportar_error, e.mensaje),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    OutlinedButton(onClick = viewModel::generar, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.reintentar))
+                    }
+                }
+                else -> Unit
+            }
             Button(
-                onClick = { Compartir.video(context, archivo, actual.titulo) },
+                onClick = { archivo?.let { Compartir.video(context, it, actual.titulo) } },
+                enabled = archivo != null,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(stringResource(R.string.compartir))
@@ -125,7 +148,7 @@ fun ExportarScreen(
             } else {
                 OutlinedButton(
                     onClick = viewModel::guardarEnGaleria,
-                    enabled = !guardando,
+                    enabled = archivo != null && !guardando,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(stringResource(R.string.galeria_guardar))

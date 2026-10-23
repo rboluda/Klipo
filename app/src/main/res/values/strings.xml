@@ -44,8 +44,11 @@
     <string name="siguiente">Siguiente</string>
     <string name="editor_titulo">Editor</string>
     <string name="editor_recortar">Recortar</string>
+    <string name="recorte_resumen">%1$s – %2$s · %3$s</string>
     <string name="exportar_titulo">Exportar</string>
     <string name="exportar_no_disponible">Este vídeo ya no está disponible</string>
+    <string name="exportar_generando">Generando vídeo… %1$d %%</string>
+    <string name="exportar_error">No se pudo generar el vídeo: %1$s</string>
     <string name="exportar_pista_galeria">Para guardarlo en la galería, pulsa Compartir y elige «Guardar en galería».</string>
     <string name="compartir">Compartir</string>
     <string name="galeria_guardar">Guardar en galería</string>
