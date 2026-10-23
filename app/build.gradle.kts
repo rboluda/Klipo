@@ -94,6 +94,10 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.navigation.compose)
 
+    // Reproductor del editor (previsualización del vídeo y del recorte)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+
     // Motor de descarga: yt-dlp (con Python) y FFmpeg empaquetados
     implementation(libs.youtubedl.library)
     implementation(libs.youtubedl.ffmpeg)

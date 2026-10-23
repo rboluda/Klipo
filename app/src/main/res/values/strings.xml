@@ -41,6 +41,9 @@
     <string name="reintentar">Reintentar</string>
 
     <string name="volver">Volver</string>
+    <string name="siguiente">Siguiente</string>
+    <string name="editor_titulo">Editor</string>
+    <string name="editor_recortar">Recortar</string>
     <string name="exportar_titulo">Exportar</string>
     <string name="exportar_no_disponible">Este vídeo ya no está disponible</string>
     <string name="exportar_pista_galeria">Para guardarlo en la galería, pulsa Compartir y elige «Guardar en galería».</string>

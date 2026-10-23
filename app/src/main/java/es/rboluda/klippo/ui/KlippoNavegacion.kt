@@ -6,16 +6,19 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import es.rboluda.klippo.ui.editor.EditorScreen
 import es.rboluda.klippo.ui.exportar.ExportarScreen
 import es.rboluda.klippo.ui.inicio.InicioScreen
 import es.rboluda.klippo.ui.inicio.InicioViewModel
 
-// Pantallas de la app: Inicio → (Editor, en la Fase 2) → Exportar
+// Pantallas de la app (solo tres): Inicio → Editor → Exportar
 object Rutas {
     const val INICIO = "inicio"
     const val ARG_ID = "id"
+    const val EDITOR = "editor/{$ARG_ID}"
     const val EXPORTAR = "exportar/{$ARG_ID}"
 
+    fun editor(id: String) = "editor/$id"
     fun exportar(id: String) = "exportar/$id"
 }
 
@@ -26,7 +29,16 @@ fun KlippoNavegacion(inicioViewModel: InicioViewModel) {
         composable(Rutas.INICIO) {
             InicioScreen(
                 viewModel = inicioViewModel,
-                onAbrir = { id -> nav.navigate(Rutas.exportar(id)) },
+                onAbrir = { id -> nav.navigate(Rutas.editor(id)) },
+            )
+        }
+        composable(
+            Rutas.EDITOR,
+            arguments = listOf(navArgument(Rutas.ARG_ID) { type = NavType.StringType }),
+        ) {
+            EditorScreen(
+                onVolver = { nav.popBackStack() },
+                onSiguiente = { id -> nav.navigate(Rutas.exportar(id)) },
             )
         }
         composable(
