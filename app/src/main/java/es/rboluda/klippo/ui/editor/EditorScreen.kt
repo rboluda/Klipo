@@ -3,12 +3,18 @@ package es.rboluda.klippo.ui.editor
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,14 +51,48 @@ import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import es.rboluda.klippo.R
+import es.rboluda.klippo.edicion.Formato
 import es.rboluda.klippo.edicion.Recorte
 import kotlinx.coroutines.delay
 import java.io.File
 import java.util.Locale
 
-// Herramientas de la barra inferior. La Fase 3 añadirá encuadre, emojis y pixelado.
+// Herramientas de la barra inferior. La Fase 3 añadirá emojis y pixelado.
 private enum class Herramienta(@param:StringRes val nombre: Int, @param:DrawableRes val icono: Int) {
     RECORTAR(R.string.editor_recortar, R.drawable.ic_recortar),
+    ENCUADRE(R.string.editor_encuadre, R.drawable.ic_encuadre),
+}
+
+// Formatos de encuadre como chips; "Original" quita el encuadre
+@Composable
+private fun PanelEncuadre(seleccionado: Formato?, onElegir: (Formato?) -> Unit) {
+    Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FilterChip(
+                selected = seleccionado == null,
+                onClick = { onElegir(null) },
+                label = { Text(stringResource(R.string.encuadre_original)) },
+            )
+            for (formato in Formato.entries) {
+                FilterChip(
+                    selected = seleccionado == formato,
+                    onClick = { onElegir(formato) },
+                    label = {
+                        Text(
+                            if (formato == Formato.LIBRE) stringResource(R.string.encuadre_libre)
+                            else formato.etiqueta
+                        )
+                    },
+                )
+            }
+        }
+    }
 }
 
 // Editor: vídeo arriba, panel de la herramienta activa y barra de herramientas abajo.
@@ -61,12 +101,15 @@ private enum class Herramienta(@param:StringRes val nombre: Int, @param:Drawable
 @Composable
 fun EditorScreen(
     onVolver: () -> Unit,
-    onSiguiente: (id: String, recorte: Recorte?) -> Unit,
+    onSiguiente: (id: String) -> Unit,
     viewModel: EditorViewModel = viewModel(factory = EditorViewModel.Factory),
 ) {
     val descarga by viewModel.descarga.collectAsStateWithLifecycle()
-    val duracionMs by viewModel.duracionMs.collectAsStateWithLifecycle()
+    val medidas by viewModel.medidas.collectAsStateWithLifecycle()
+    val duracionMs = medidas?.duracionMs ?: 0L
+    val aspecto = medidas?.aspecto ?: 0f
     val recorte by viewModel.recorte.collectAsStateWithLifecycle()
+    val encuadre by viewModel.encuadre.collectAsStateWithLifecycle()
     var herramienta by rememberSaveable { mutableStateOf<Herramienta?>(null) }
     val archivo = descarga?.archivo?.takeIf { it.exists() }
     val reproductor = archivo?.let { rememberReproductor(it) }
@@ -98,7 +141,7 @@ fun EditorScreen(
                     TextButton(
                         onClick = {
                             reproductor?.pause()
-                            descarga?.let { onSiguiente(it.id, viewModel.recorteEfectivo()) }
+                            descarga?.let { onSiguiente(it.id) }
                         },
                         enabled = archivo != null,
                     ) {
@@ -123,12 +166,19 @@ fun EditorScreen(
                         onSoltar = { reproductor?.seekTo(tramo.inicioMs) },
                     )
                 }
+                if (herramienta == Herramienta.ENCUADRE) {
+                    PanelEncuadre(
+                        seleccionado = encuadre?.formato,
+                        onElegir = viewModel::elegirFormato,
+                    )
+                }
                 NavigationBar {
                     for (opcion in Herramienta.entries) {
                         NavigationBarItem(
                             selected = herramienta == opcion,
                             onClick = { herramienta = if (herramienta == opcion) null else opcion },
-                            enabled = archivo != null,
+                            // El encuadre necesita conocer las medidas del vídeo
+                            enabled = archivo != null && (opcion != Herramienta.ENCUADRE || aspecto > 0f),
                             icon = { Icon(painterResource(opcion.icono), null) },
                             label = { Text(stringResource(opcion.nombre)) },
                         )
@@ -145,10 +195,22 @@ fun EditorScreen(
             contentAlignment = Alignment.Center,
         ) {
             if (reproductor != null) {
-                AndroidView(
-                    factory = { PlayerView(it).apply { player = reproductor } },
-                    modifier = Modifier.fillMaxSize(),
-                )
+                // La caja tiene la proporción del vídeo: así la capa de encuadre coincide
+                // exactamente con la imagen (sin las bandas negras del reproductor)
+                Box(if (aspecto > 0f) Modifier.aspectRatio(aspecto) else Modifier.fillMaxSize()) {
+                    AndroidView(
+                        factory = { PlayerView(it).apply { player = reproductor } },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    encuadre?.let {
+                        CapaEncuadre(
+                            encuadre = it,
+                            editable = herramienta == Herramienta.ENCUADRE,
+                            aspectoVideo = aspecto,
+                            onCambiar = viewModel::cambiarEncuadre,
+                        )
+                    }
+                }
             } else {
                 Text(stringResource(R.string.exportar_no_disponible), color = Color.White)
             }

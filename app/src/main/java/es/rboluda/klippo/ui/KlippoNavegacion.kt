@@ -1,13 +1,15 @@
 package es.rboluda.klippo.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import es.rboluda.klippo.edicion.Recorte
 import es.rboluda.klippo.ui.editor.EditorScreen
+import es.rboluda.klippo.ui.editor.EditorViewModel
 import es.rboluda.klippo.ui.exportar.ExportarScreen
 import es.rboluda.klippo.ui.inicio.InicioScreen
 import es.rboluda.klippo.ui.inicio.InicioViewModel
@@ -16,16 +18,14 @@ import es.rboluda.klippo.ui.inicio.InicioViewModel
 object Rutas {
     const val INICIO = "inicio"
     const val ARG_ID = "id"
-    // Parámetros de edición que el editor pasa a Exportar (-1 = sin recorte)
-    const val ARG_INICIO = "inicio"
-    const val ARG_FIN = "fin"
     const val EDITOR = "editor/{$ARG_ID}"
-    const val EXPORTAR = "exportar/{$ARG_ID}?$ARG_INICIO={$ARG_INICIO}&$ARG_FIN={$ARG_FIN}"
+    const val EXPORTAR = "exportar/{$ARG_ID}"
 
     fun editor(id: String) = "editor/$id"
-    fun exportar(id: String, recorte: Recorte?) =
-        "exportar/$id?$ARG_INICIO=${recorte?.inicioMs ?: -1}&$ARG_FIN=${recorte?.finMs ?: -1}"
+    fun exportar(id: String) = "exportar/$id"
 }
+
+private val argumentoId = listOf(navArgument(Rutas.ARG_ID) { type = NavType.StringType })
 
 @Composable
 fun KlippoNavegacion(inicioViewModel: InicioViewModel) {
@@ -37,24 +37,21 @@ fun KlippoNavegacion(inicioViewModel: InicioViewModel) {
                 onAbrir = { id -> nav.navigate(Rutas.editor(id)) },
             )
         }
-        composable(
-            Rutas.EDITOR,
-            arguments = listOf(navArgument(Rutas.ARG_ID) { type = NavType.StringType }),
-        ) {
+        composable(Rutas.EDITOR, arguments = argumentoId) {
             EditorScreen(
                 onVolver = { nav.popBackStack() },
-                onSiguiente = { id, recorte -> nav.navigate(Rutas.exportar(id, recorte)) },
+                onSiguiente = { id -> nav.navigate(Rutas.exportar(id)) },
             )
         }
-        composable(
-            Rutas.EXPORTAR,
-            arguments = listOf(
-                navArgument(Rutas.ARG_ID) { type = NavType.StringType },
-                navArgument(Rutas.ARG_INICIO) { type = NavType.LongType; defaultValue = -1L },
-                navArgument(Rutas.ARG_FIN) { type = NavType.LongType; defaultValue = -1L },
-            ),
-        ) {
-            ExportarScreen(onVolver = { nav.popBackStack() })
+        composable(Rutas.EXPORTAR, arguments = argumentoId) { entrada ->
+            // Los parámetros de edición viven en el ViewModel del editor (que sigue debajo en
+            // la pila y los guarda en SavedStateHandle): así no hay que pasarlos por la ruta
+            val entradaEditor = remember(entrada) { nav.getBackStackEntry(Rutas.EDITOR) }
+            val editor: EditorViewModel = viewModel(entradaEditor, factory = EditorViewModel.Factory)
+            ExportarScreen(
+                parametros = remember(entrada) { editor.parametros() },
+                onVolver = { nav.popBackStack() },
+            )
         }
     }
 }

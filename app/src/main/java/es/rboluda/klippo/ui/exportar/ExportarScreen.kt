@@ -46,13 +46,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import es.rboluda.klippo.R
 import es.rboluda.klippo.almacenamiento.Compartir
+import es.rboluda.klippo.edicion.ParametrosEdicion
 
 // Pantalla Exportar: vista previa del vídeo, compartir y guardar en la galería
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExportarScreen(
+    parametros: ParametrosEdicion,
     onVolver: () -> Unit,
-    viewModel: ExportarViewModel = viewModel(factory = ExportarViewModel.Factory),
+    viewModel: ExportarViewModel = viewModel(factory = ExportarViewModel.factory(parametros)),
 ) {
     val descarga = viewModel.descarga
     val estado by viewModel.estadoExportacion.collectAsStateWithLifecycle()

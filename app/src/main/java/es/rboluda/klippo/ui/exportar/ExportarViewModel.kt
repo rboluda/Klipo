@@ -15,7 +15,6 @@ import es.rboluda.klippo.almacenamiento.GuardarEnGaleria
 import es.rboluda.klippo.descarga.Descarga
 import es.rboluda.klippo.edicion.Exportacion
 import es.rboluda.klippo.edicion.ParametrosEdicion
-import es.rboluda.klippo.edicion.Recorte
 import es.rboluda.klippo.ui.Rutas
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -45,16 +44,13 @@ sealed interface EstadoExportacion {
     data object NoDisponible : EstadoExportacion
 }
 
-class ExportarViewModel(private val app: KlippoApp, estado: SavedStateHandle) : ViewModel() {
+class ExportarViewModel(
+    private val app: KlippoApp,
+    estado: SavedStateHandle,
+    private val parametros: ParametrosEdicion,
+) : ViewModel() {
 
     private val id: String = checkNotNull(estado[Rutas.ARG_ID])
-    private val parametros = ParametrosEdicion(
-        recorte = run {
-            val inicio = estado.get<Long>(Rutas.ARG_INICIO) ?: -1L
-            val fin = estado.get<Long>(Rutas.ARG_FIN) ?: -1L
-            if (inicio >= 0 && fin > inicio) Recorte(inicio, fin) else null
-        },
-    )
 
     val descarga: Descarga? = app.descargas.buscar(id)
 
@@ -150,8 +146,10 @@ class ExportarViewModel(private val app: KlippoApp, estado: SavedStateHandle) : 
     }
 
     companion object {
-        val Factory = viewModelFactory {
-            initializer { ExportarViewModel(this[APPLICATION_KEY] as KlippoApp, createSavedStateHandle()) }
+        fun factory(parametros: ParametrosEdicion) = viewModelFactory {
+            initializer {
+                ExportarViewModel(this[APPLICATION_KEY] as KlippoApp, createSavedStateHandle(), parametros)
+            }
         }
     }
 }
