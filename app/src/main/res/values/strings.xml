@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Klippo</string>
+    <string name="version">v%1$s</string>
     <string name="inicio_url_etiqueta">Enlace del vídeo</string>
     <string name="inicio_url_ayuda">YouTube, TikTok, X o Instagram</string>
     <string name="inicio_descargar">Descargar</string>

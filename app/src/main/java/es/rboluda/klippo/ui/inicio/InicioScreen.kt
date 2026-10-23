@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import es.rboluda.klippo.BuildConfig
 import es.rboluda.klippo.R
 import es.rboluda.klippo.descarga.EstadoMotor
 import es.rboluda.klippo.sesion.Plataforma
@@ -104,7 +105,17 @@ fun InicioScreen(viewModel: InicioViewModel = viewModel(factory = InicioViewMode
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.app_name)) },
+                title = {
+                    Column {
+                        Text(stringResource(R.string.app_name))
+                        // Versión a la vista para saber qué compilación está instalada
+                        Text(
+                            text = stringResource(R.string.version, BuildConfig.VERSION_NAME),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
                 actions = {
                     MenuOpciones(
                         estado = estadoMotor,
