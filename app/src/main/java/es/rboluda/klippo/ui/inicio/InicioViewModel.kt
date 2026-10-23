@@ -42,18 +42,15 @@ class InicioViewModel(private val app: KlippoApp) : ViewModel() {
     val estadoMotor: StateFlow<EstadoMotor> = motor.estado
     val descargas: StateFlow<List<Descarga>> = app.descargas.descargas
 
-    fun descargar(url: String) {
+    // La calidad se pregunta en cada vídeo; la última elegida queda marcada la próxima vez
+    fun descargar(url: String, calidad: Calidad) {
         ultimaUrlPegada = url.trim()
-        DescargaService.descargar(app, url.trim())
-    }
-
-    // Calidad recordada: la elegida aquí se usa también para los enlaces compartidos
-    val calidad: StateFlow<Calidad> = app.ajustes.calidad
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Calidad.MEJOR)
-
-    fun elegirCalidad(calidad: Calidad) {
         viewModelScope.launch { app.ajustes.guardarCalidad(calidad) }
+        DescargaService.descargar(app, url.trim(), calidad)
     }
+
+    val ultimaCalidad: StateFlow<Calidad> = app.ajustes.calidad
+        .stateIn(viewModelScope, SharingStarted.Eagerly, Calidad.MEJOR)
 
     // Enlace recibido desde Compartir de otra app; la pantalla lo consume y lo descarga
     private val _urlCompartida = MutableStateFlow<String?>(null)
@@ -135,7 +132,7 @@ class InicioViewModel(private val app: KlippoApp) : ViewModel() {
             if (reintentar != null && resultado != ResultadoActualizacion.ERROR) {
                 app.descargas.eliminar(reintentar.id)
                 withContext(Dispatchers.IO) { reintentar.carpeta.deleteRecursively() }
-                descargar(reintentar.url)
+                descargar(reintentar.url, reintentar.calidad)
             }
             _avisos.send(app.getString(aviso))
         }

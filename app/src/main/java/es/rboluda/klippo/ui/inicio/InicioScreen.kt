@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,7 +16,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -64,7 +66,11 @@ import es.rboluda.klippo.sesion.SesionActivity
 // Pantalla de inicio: campo de URL y lista de descargas
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InicioScreen(viewModel: InicioViewModel = viewModel(factory = InicioViewModel.Factory)) {
+fun InicioScreen(
+    viewModel: InicioViewModel = viewModel(factory = InicioViewModel.Factory),
+    // Abre la pantalla Exportar (en la Fase 2, el editor) de una descarga completada
+    onAbrir: (id: String) -> Unit = {},
+) {
     val estadoMotor by viewModel.estadoMotor.collectAsStateWithLifecycle()
     val actualizando by viewModel.actualizando.collectAsStateWithLifecycle()
     val descargas by viewModel.descargas.collectAsStateWithLifecycle()
@@ -82,42 +88,64 @@ fun InicioScreen(viewModel: InicioViewModel = viewModel(factory = InicioViewMode
         onPauseOrDispose { }
     }
 
-    val calidad by viewModel.calidad.collectAsStateWithLifecycle()
+    val ultimaCalidad by viewModel.ultimaCalidad.collectAsStateWithLifecycle()
     val urlCompartida by viewModel.urlCompartida.collectAsStateWithLifecycle()
+    // Enlace esperando a que el usuario elija la calidad (diálogo abierto)
+    var urlParaElegir by rememberSaveable { mutableStateOf<String?>(null) }
+    var calidadPendiente by rememberSaveable { mutableStateOf<Calidad?>(null) }
 
     // Tras responder al permiso (sí o no) se lanza la descarga igualmente
     val pedirPermiso = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) {
-        urlPendiente?.let(viewModel::descargar)
+        val enlace = urlPendiente
+        val calidadElegida = calidadPendiente
+        if (enlace != null && calidadElegida != null) viewModel.descargar(enlace, calidadElegida)
         urlPendiente = null
+        calidadPendiente = null
     }
 
     // El permiso de notificaciones se pide en la primera descarga, venga de donde venga
-    val lanzarDescarga = { enlace: String ->
+    val lanzarDescarga = { enlace: String, calidadElegida: Calidad ->
         if (viewModel.debePedirPermisoNotificaciones()) {
             viewModel.marcarPermisoPedido()
             urlPendiente = enlace
+            calidadPendiente = calidadElegida
             pedirPermiso.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
-            viewModel.descargar(enlace)
+            viewModel.descargar(enlace, calidadElegida)
         }
     }
 
     val empezarDescarga = {
         if (url.isNotBlank() && estadoMotor is EstadoMotor.Listo) {
-            lanzarDescarga(url)
+            urlParaElegir = url
             url = ""
         }
     }
 
-    // Enlace compartido desde otra app: se descarga directamente (el servicio espera
-    // a que el motor esté listo si aún está arrancando)
+    // Enlace compartido desde otra app: se pregunta la calidad y se descarga
+    // (el servicio espera a que el motor esté listo si aún está arrancando)
     LaunchedEffect(urlCompartida) {
         urlCompartida?.let {
-            lanzarDescarga(it)
+            urlParaElegir = it
             viewModel.compartidoConsumido()
         }
+    }
+
+    urlParaElegir?.let { enlace ->
+        DialogoCalidad(
+            preseleccionada = ultimaCalidad,
+            onElegir = { calidadElegida ->
+                urlParaElegir = null
+                lanzarDescarga(enlace, calidadElegida)
+            },
+            onCancelar = {
+                urlParaElegir = null
+                // Si venía del campo, se devuelve para no perderlo
+                if (url.isBlank()) url = enlace
+            },
+        )
     }
 
     // Autorrelleno desde el portapapeles. Android solo deja leerlo con la ventana
@@ -195,18 +223,12 @@ fun InicioScreen(viewModel: InicioViewModel = viewModel(factory = InicioViewMode
                 ),
                 keyboardActions = KeyboardActions(onGo = { empezarDescarga() }),
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
+            Button(
+                onClick = empezarDescarga,
+                enabled = url.isNotBlank() && estadoMotor is EstadoMotor.Listo,
+                modifier = Modifier.align(Alignment.End),
             ) {
-                SelectorCalidad(calidad, onElegir = viewModel::elegirCalidad)
-                Spacer(Modifier.weight(1f))
-                Button(
-                    onClick = empezarDescarga,
-                    enabled = url.isNotBlank() && estadoMotor is EstadoMotor.Listo,
-                ) {
-                    Text(stringResource(R.string.inicio_descargar))
-                }
+                Text(stringResource(R.string.inicio_descargar))
             }
 
             if (descargas.isEmpty()) {
@@ -233,6 +255,7 @@ fun InicioScreen(viewModel: InicioViewModel = viewModel(factory = InicioViewMode
                             onCancelar = { viewModel.cancelar(descarga.id) },
                             onActualizarYReintentar = { viewModel.actualizarMotor(reintentar = descarga) },
                             onIniciarSesion = iniciarSesion,
+                            onAbrir = { onAbrir(descarga.id) },
                         )
                     }
                 }
@@ -241,26 +264,38 @@ fun InicioScreen(viewModel: InicioViewModel = viewModel(factory = InicioViewMode
     }
 }
 
-// Botón con la calidad actual que despliega las opciones
+// Diálogo que pregunta la calidad de cada vídeo; un toque en una opción lanza la descarga.
+// La última usada aparece marcada para elegirla rápido.
 @Composable
-private fun SelectorCalidad(calidad: Calidad, onElegir: (Calidad) -> Unit) {
-    var abierto by remember { mutableStateOf(false) }
-    Box {
-        TextButton(onClick = { abierto = true }) {
-            Text(stringResource(calidad.etiqueta) + " ▾")
-        }
-        DropdownMenu(expanded = abierto, onDismissRequest = { abierto = false }) {
-            for (opcion in Calidad.entries) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(opcion.etiqueta)) },
-                    onClick = {
-                        abierto = false
-                        onElegir(opcion)
-                    },
-                )
+private fun DialogoCalidad(
+    preseleccionada: Calidad,
+    onElegir: (Calidad) -> Unit,
+    onCancelar: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onCancelar,
+        title = { Text(stringResource(R.string.calidad_titulo)) },
+        text = {
+            Column {
+                for (opcion in Calidad.entries) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onElegir(opcion) }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = opcion == preseleccionada, onClick = { onElegir(opcion) })
+                        Text(stringResource(opcion.etiqueta))
+                    }
+                }
             }
-        }
-    }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onCancelar) { Text(stringResource(R.string.cancelar)) }
+        },
+    )
 }
 
 // Línea discreta cuando yt-dlp tiene más de un mes: las descargas empiezan a fallar

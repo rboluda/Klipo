@@ -36,6 +36,21 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- Comparte vídeos de la caché (cacheDir/descargas) con otras apps -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.archivos"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/rutas_archivos" />
+        </provider>
+
+        <receiver
+            android:name=".almacenamiento.GuardarEnGaleriaReceiver"
+            android:exported="false" />
+
         <service
             android:name=".descarga.DescargaService"
             android:exported="false"

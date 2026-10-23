@@ -1,5 +1,6 @@
 package es.rboluda.klippo.descarga
 
+import es.rboluda.klippo.ajustes.Calidad
 import java.io.File
 
 sealed interface EstadoDescarga {
@@ -14,6 +15,8 @@ data class Descarga(
     val id: String,
     val url: String,
     val carpeta: File,
+    // Elegida por el usuario para este vídeo; se reutiliza al reintentar
+    val calidad: Calidad = Calidad.MEJOR,
     // Momento de inicio (ms desde epoch); ordena la lista
     val creado: Long = System.currentTimeMillis(),
     val titulo: String? = null,

@@ -6,6 +6,7 @@
     <string name="inicio_url_ayuda">YouTube, TikTok, X o Instagram</string>
     <string name="inicio_descargar">Descargar</string>
     <string name="inicio_lista_vacia">Aún no hay descargas</string>
+    <string name="calidad_titulo">Calidad del vídeo</string>
     <string name="calidad_mejor">Mejor calidad</string>
     <string name="calidad_1080">Hasta 1080p</string>
     <string name="calidad_720">Hasta 720p</string>
@@ -36,6 +37,15 @@
     <string name="sesion_cerrada">Sesión de %1$s cerrada</string>
     <string name="sesion_error_carga">No se pudo cargar %1$s. Comprueba la conexión.</string>
     <string name="reintentar">Reintentar</string>
+
+    <string name="volver">Volver</string>
+    <string name="exportar_titulo">Exportar</string>
+    <string name="exportar_no_disponible">Este vídeo ya no está disponible</string>
+    <string name="exportar_pista_galeria">Para guardarlo en la galería, pulsa Compartir y elige «Guardar en galería».</string>
+    <string name="compartir">Compartir</string>
+    <string name="galeria_guardar">Guardar en galería</string>
+    <string name="galeria_guardado">Guardado en Movies/Klippo</string>
+    <string name="galeria_error">No se pudo guardar en la galería</string>
 
     <string name="cancelar">Cancelar</string>
     <string name="canal_progreso">Progreso de descargas</string>

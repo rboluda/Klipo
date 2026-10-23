@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Icono provisional; el definitivo sustituirá estas tres capas -->
+<!-- Icono adaptativo a partir del diseño de docs/icono/klipo_icon.png -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@color/ic_launcher_fondo" />
+    <background android:drawable="@drawable/ic_launcher_fondo" />
     <foreground android:drawable="@drawable/ic_launcher_primer_plano" />
-    <monochrome android:drawable="@drawable/ic_launcher_primer_plano" />
+    <!-- Iconos temáticos (Android 13+): el sistema colorea esta silueta -->
+    <monochrome android:drawable="@drawable/ic_launcher_monocromo" />
 </adaptive-icon>

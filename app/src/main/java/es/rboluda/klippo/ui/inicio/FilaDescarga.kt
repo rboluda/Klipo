@@ -34,14 +34,16 @@ fun FilaDescarga(
     onCancelar: () -> Unit,
     onActualizarYReintentar: () -> Unit,
     onIniciarSesion: (Plataforma) -> Unit,
+    onAbrir: () -> Unit,
 ) {
     // El error completo de yt-dlp es muy largo: se muestra resumido y se expande al tocar
     var errorCompleto by remember { mutableStateOf(false) }
 
-    val tocable = if (descarga.estado is EstadoDescarga.Fallida) {
-        Modifier.clickable { errorCompleto = !errorCompleto }
-    } else {
-        Modifier
+    // Completada: abre Exportar. Fallida: muestra/oculta el error completo
+    val tocable = when (descarga.estado) {
+        EstadoDescarga.Completada -> Modifier.clickable(onClick = onAbrir)
+        is EstadoDescarga.Fallida -> Modifier.clickable { errorCompleto = !errorCompleto }
+        else -> Modifier
     }
     Card(modifier = Modifier.fillMaxWidth().then(tocable)) {
         Column(

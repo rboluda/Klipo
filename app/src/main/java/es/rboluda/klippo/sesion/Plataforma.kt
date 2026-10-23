@@ -1,6 +1,6 @@
 package es.rboluda.klippo.sesion
 
-import android.net.Uri
+import androidx.core.net.toUri
 
 // Plataformas que admiten iniciar sesión para descargar contenido que lo exige
 enum class Plataforma(
@@ -32,7 +32,7 @@ enum class Plataforma(
 
     companion object {
         fun deUrl(url: String): Plataforma? {
-            val host = Uri.parse(url.trim()).host?.lowercase() ?: return null
+            val host = url.trim().toUri().host?.lowercase() ?: return null
             return entries.firstOrNull { p -> p.dominios.any { host == it || host.endsWith(".$it") } }
         }
     }

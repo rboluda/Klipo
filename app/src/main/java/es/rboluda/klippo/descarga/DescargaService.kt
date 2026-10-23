@@ -9,6 +9,7 @@ import android.os.IBinder
 import android.os.SystemClock
 import com.yausername.youtubedl_android.YoutubeDL
 import es.rboluda.klippo.KlippoApp
+import es.rboluda.klippo.ajustes.Calidad
 import es.rboluda.klippo.almacenamiento.MetaDescarga
 import es.rboluda.klippo.sesion.Sesiones
 import kotlinx.coroutines.CoroutineScope
@@ -35,19 +36,23 @@ class DescargaService : Service() {
         when (intent?.action) {
             ACCION_DESCARGAR -> {
                 val url = intent.getStringExtra(EXTRA_URL)
-                if (url != null) iniciar(url) else detenerSiNoHayTrabajo()
+                val calidad = intent.getStringExtra(EXTRA_CALIDAD)
+                    ?.let { nombre -> Calidad.entries.find { it.name == nombre } }
+                    ?: Calidad.MEJOR
+                if (url != null) iniciar(url, calidad) else detenerSiNoHayTrabajo()
             }
             ACCION_CANCELAR -> intent.getStringExtra(EXTRA_ID)?.let { app.motor.cancelar(it) }
         }
         return START_NOT_STICKY
     }
 
-    private fun iniciar(url: String) {
+    private fun iniciar(url: String, calidad: Calidad) {
         val id = UUID.randomUUID().toString().substring(0, 8)
         val descarga = Descarga(
             id = id,
             url = url,
             carpeta = File(app.carpetaDescargas, id),
+            calidad = calidad,
         )
         app.descargas.agregar(descarga)
         MetaDescarga.escribir(descarga)
@@ -64,10 +69,8 @@ class DescargaService : Service() {
         val id = descarga.id
         try {
             val cookies = Sesiones.cookiesPara(this, descarga.url)
-            // Siempre los últimos ajustes usados (también para enlaces compartidos)
-            val calidad = app.ajustes.calidadActual()
             val archivo = app.motor.descargar(
-                id, descarga.url, descarga.carpeta, cookies, calidad.alturaMax,
+                id, descarga.url, descarga.carpeta, cookies, descarga.calidad.alturaMax,
             ) { progreso, eta ->
                 // Este callback llega desde el hilo del proceso de yt-dlp
                 app.descargas.actualizar(id) { it.copy(progreso = progreso, etaSegundos = eta) }
@@ -133,12 +136,14 @@ class DescargaService : Service() {
         private const val ACCION_DESCARGAR = "es.rboluda.klippo.DESCARGAR"
         private const val ACCION_CANCELAR = "es.rboluda.klippo.CANCELAR"
         private const val EXTRA_URL = "url"
+        private const val EXTRA_CALIDAD = "calidad"
         private const val EXTRA_ID = "id"
 
-        fun descargar(context: Context, url: String) {
+        fun descargar(context: Context, url: String, calidad: Calidad) {
             val intent = Intent(context, DescargaService::class.java)
                 .setAction(ACCION_DESCARGAR)
                 .putExtra(EXTRA_URL, url)
+                .putExtra(EXTRA_CALIDAD, calidad.name)
             context.startForegroundService(intent)
         }
 

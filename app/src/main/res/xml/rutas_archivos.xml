@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Carpetas de la caché que se pueden compartir con otras apps mediante FileProvider -->
+<paths>
+    <cache-path name="descargas" path="descargas/" />
+</paths>

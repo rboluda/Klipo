@@ -6,7 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import es.rboluda.klippo.ui.inicio.InicioScreen
+import es.rboluda.klippo.ui.KlippoNavegacion
 import es.rboluda.klippo.ui.inicio.InicioViewModel
 import es.rboluda.klippo.ui.theme.KlippoTheme
 import es.rboluda.klippo.util.Enlaces
@@ -23,7 +23,7 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) procesarCompartido(intent)
         setContent {
             KlippoTheme {
-                InicioScreen(inicioViewModel)
+                KlippoNavegacion(inicioViewModel)
             }
         }
     }

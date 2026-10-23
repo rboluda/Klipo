@@ -1,6 +1,6 @@
 package es.rboluda.klippo.util
 
-import android.net.Uri
+import androidx.core.net.toUri
 
 // Utilidades para reconocer enlaces de vídeo en texto pegado o compartido
 object Enlaces {
@@ -17,7 +17,7 @@ object Enlaces {
 
     // Solo se autorrellena desde el portapapeles si es de una plataforma conocida
     fun esSoportada(url: String): Boolean {
-        val host = Uri.parse(url).host?.lowercase() ?: return false
+        val host = url.toUri().host?.lowercase() ?: return false
         return DOMINIOS_SOPORTADOS.any { host == it || host.endsWith(".$it") }
     }
 }
