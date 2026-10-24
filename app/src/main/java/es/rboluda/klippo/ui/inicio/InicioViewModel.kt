@@ -55,20 +55,12 @@ class InicioViewModel(private val app: KlippoApp) : ViewModel() {
     val ultimaCalidad: StateFlow<Calidad> = app.ajustes.calidad
         .stateIn(viewModelScope, SharingStarted.Eagerly, Calidad.MEJOR)
 
+    // Si está apagado en Ajustes, se descarga directamente con ultimaCalidad
+    val preguntarCalidad: StateFlow<Boolean> = app.ajustes.preguntarCalidad
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
     // Actualizaciones de la app desde GitHub Releases (solo en releases firmadas)
     val actualizacion: StateFlow<EstadoActualizacion> = app.actualizador.estado
-    val actualizacionesActivas: Boolean = app.actualizador.activo
-
-    fun buscarActualizaciones() {
-        viewModelScope.launch {
-            val texto = try {
-                if (app.actualizador.comprobar() == null) app.getString(R.string.actualizacion_al_dia) else null
-            } catch (e: Exception) {
-                app.getString(R.string.actualizacion_error_comprobar)
-            }
-            texto?.let { _avisos.send(it) }
-        }
-    }
 
     fun actualizarApp(nueva: VersionNueva) {
         viewModelScope.launch { app.actualizador.descargarEInstalar(nueva) }
@@ -128,20 +120,6 @@ class InicioViewModel(private val app: KlippoApp) : ViewModel() {
     // Mensajes puntuales para el snackbar
     private val _avisos = Channel<String>(Channel.BUFFERED)
     val avisos = _avisos.receiveAsFlow()
-
-    // Plataformas con sesión iniciada (se refresca al volver a la pantalla)
-    private val _sesiones = MutableStateFlow<Set<Plataforma>>(emptySet())
-    val sesiones: StateFlow<Set<Plataforma>> = _sesiones.asStateFlow()
-
-    fun refrescarSesiones() {
-        _sesiones.value = Plataforma.entries.filter { Sesiones.tieneSesion(app, it) }.toSet()
-    }
-
-    fun cerrarSesion(plataforma: Plataforma) {
-        Sesiones.cerrar(app, plataforma)
-        refrescarSesiones()
-        _avisos.trySend(app.getString(R.string.sesion_cerrada, plataforma.nombre))
-    }
 
     // Días desde la publicación de la versión de yt-dlp (se calcula en local, sin red)
     val diasMotor: StateFlow<Int?> = motor.estado

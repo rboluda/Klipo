@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -49,7 +50,11 @@ fun FilaDescarga(
         is EstadoDescarga.Fallida -> Modifier.clickable { errorCompleto = !errorCompleto }
         else -> Modifier
     }
-    Card(modifier = Modifier.fillMaxWidth().then(tocable)) {
+    Card(
+        modifier = Modifier.fillMaxWidth().then(tocable),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
         Row(
             modifier = Modifier.padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -58,7 +63,7 @@ fun FilaDescarga(
                 archivo = descarga.miniatura,
                 modifier = Modifier
                     .size(width = 72.dp, height = 96.dp)
-                    .clip(RoundedCornerShape(8.dp)),
+                    .clip(RoundedCornerShape(14.dp)),
             )
             Column(
                 modifier = Modifier.weight(1f),
@@ -131,12 +136,18 @@ fun FilaDescarga(
 // Ficha del modo mosaico (solo para descargas completadas): miniatura y título
 @Composable
 fun FichaMosaico(descarga: Descarga, onAbrir: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onAbrir)) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onAbrir),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
         MiniaturaVideo(
             archivo = descarga.miniatura,
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(3f / 4f),
+                .aspectRatio(3f / 4f)
+                .padding(6.dp)
+                .clip(RoundedCornerShape(18.dp)),
         )
         Text(
             text = descarga.titulo ?: descarga.url,

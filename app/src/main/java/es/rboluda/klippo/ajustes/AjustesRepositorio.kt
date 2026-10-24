@@ -2,6 +2,7 @@ package es.rboluda.klippo.ajustes
 
 import android.content.Context
 import androidx.annotation.StringRes
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -12,15 +13,26 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 // Calidad máxima de descarga; null = la mejor disponible
-enum class Calidad(val alturaMax: Int?, @param:StringRes val etiqueta: Int) {
-    MEJOR(null, R.string.calidad_mejor),
-    P1080(1080, R.string.calidad_1080),
-    P720(720, R.string.calidad_720),
-    P480(480, R.string.calidad_480),
+enum class Calidad(
+    val alturaMax: Int?,
+    @param:StringRes val etiqueta: Int,
+    @param:StringRes val etiquetaCorta: Int,
+) {
+    MEJOR(null, R.string.calidad_mejor, R.string.calidad_mejor_corta),
+    P1080(1080, R.string.calidad_1080, R.string.calidad_1080_corta),
+    P720(720, R.string.calidad_720, R.string.calidad_720_corta),
+    P480(480, R.string.calidad_480, R.string.calidad_480_corta),
 }
 
 // Cómo se muestran las descargas en Inicio
 enum class Vista { LISTA, MOSAICO }
+
+// Claro, oscuro o lo que diga el sistema
+enum class Tema(@param:StringRes val etiqueta: Int) {
+    SISTEMA(R.string.ajustes_tema_sistema),
+    CLARO(R.string.ajustes_tema_claro),
+    OSCURO(R.string.ajustes_tema_oscuro),
+}
 
 private val Context.almacen by preferencesDataStore(name = "ajustes")
 
@@ -57,5 +69,41 @@ class AjustesRepositorio(private val context: Context) {
 
     suspend fun guardarUltimaComprobacion(momento: Long) {
         context.almacen.edit { it[claveUltimaComprobacion] = momento }
+    }
+
+    // --- Pantalla de Ajustes ---
+
+    private val claveTema = stringPreferencesKey("tema")
+    private val claveColoresSistema = booleanPreferencesKey("colores_sistema")
+    private val clavePreguntarCalidad = booleanPreferencesKey("preguntar_calidad")
+    private val claveBuscarActualizaciones = booleanPreferencesKey("buscar_actualizaciones")
+
+    val tema: Flow<Tema> = context.almacen.data.map { prefs ->
+        prefs[claveTema]?.let { nombre -> Tema.entries.find { it.name == nombre } } ?: Tema.SISTEMA
+    }
+
+    // false = colores de Klippo; true = colores del fondo de pantalla (Material You)
+    val coloresSistema: Flow<Boolean> = context.almacen.data.map { it[claveColoresSistema] ?: false }
+
+    // false = se descarga directamente con la calidad predeterminada (la última elegida)
+    val preguntarCalidad: Flow<Boolean> = context.almacen.data.map { it[clavePreguntarCalidad] ?: true }
+
+    val buscarActualizaciones: Flow<Boolean> =
+        context.almacen.data.map { it[claveBuscarActualizaciones] ?: true }
+
+    suspend fun guardarTema(tema: Tema) {
+        context.almacen.edit { it[claveTema] = tema.name }
+    }
+
+    suspend fun guardarColoresSistema(activo: Boolean) {
+        context.almacen.edit { it[claveColoresSistema] = activo }
+    }
+
+    suspend fun guardarPreguntarCalidad(activo: Boolean) {
+        context.almacen.edit { it[clavePreguntarCalidad] = activo }
+    }
+
+    suspend fun guardarBuscarActualizaciones(activo: Boolean) {
+        context.almacen.edit { it[claveBuscarActualizaciones] = activo }
     }
 }

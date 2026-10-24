@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -137,9 +139,10 @@ fun ExportarScreen(
             Button(
                 onClick = { archivo?.let { Compartir.video(context, it, actual.titulo) } },
                 enabled = archivo != null,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
             ) {
-                Text(stringResource(R.string.compartir))
+                Icon(painterResource(R.drawable.ic_compartir), null, Modifier.size(20.dp))
+                Text(stringResource(R.string.compartir), Modifier.padding(start = 8.dp))
             }
             if (guardarEnShareSheet) {
                 Text(
@@ -151,9 +154,10 @@ fun ExportarScreen(
                 OutlinedButton(
                     onClick = viewModel::guardarEnGaleria,
                     enabled = archivo != null && !guardando,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
                 ) {
-                    Text(stringResource(R.string.galeria_guardar))
+                    Icon(painterResource(R.drawable.ic_guardar_galeria), null, Modifier.size(20.dp))
+                    Text(stringResource(R.string.galeria_guardar), Modifier.padding(start = 8.dp))
                 }
             }
         }
@@ -170,7 +174,7 @@ private fun Miniatura(info: InfoVideo?) {
             .fillMaxWidth()
             .heightIn(max = 420.dp)
             .aspectRatio(proporcion, matchHeightConstraintsFirst = proporcion < 1f)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(24.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
     ) {

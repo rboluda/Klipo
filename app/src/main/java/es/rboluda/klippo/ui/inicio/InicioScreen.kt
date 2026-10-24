@@ -63,6 +63,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import es.rboluda.klippo.BuildConfig
 import es.rboluda.klippo.R
+import es.rboluda.klippo.ui.comun.LogoKlippo
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.text.style.TextAlign
 import es.rboluda.klippo.actualizacion.EstadoActualizacion
 import es.rboluda.klippo.actualizacion.VersionNueva
 import es.rboluda.klippo.ajustes.Calidad
@@ -79,8 +83,9 @@ import es.rboluda.klippo.sesion.SesionActivity
 @Composable
 fun InicioScreen(
     viewModel: InicioViewModel = viewModel(factory = InicioViewModel.Factory),
-    // Abre la pantalla Exportar (en la Fase 2, el editor) de una descarga completada
+    // Abre el editor de una descarga completada
     onAbrir: (id: String) -> Unit = {},
+    onAjustes: () -> Unit = {},
 ) {
     val estadoMotor by viewModel.estadoMotor.collectAsStateWithLifecycle()
     val actualizando by viewModel.actualizando.collectAsStateWithLifecycle()
@@ -90,18 +95,12 @@ fun InicioScreen(
     val actualizacion by viewModel.actualizacion.collectAsStateWithLifecycle()
     var url by rememberSaveable { mutableStateOf("") }
     var urlPendiente by rememberSaveable { mutableStateOf<String?>(null) }
-    val sesiones by viewModel.sesiones.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
     val iniciarSesion = { p: Plataforma -> context.startActivity(SesionActivity.intent(context, p)) }
 
-    // Al volver de la pantalla de login, la sesión puede haber cambiado
-    LifecycleResumeEffect(Unit) {
-        viewModel.refrescarSesiones()
-        onPauseOrDispose { }
-    }
-
     val ultimaCalidad by viewModel.ultimaCalidad.collectAsStateWithLifecycle()
+    val preguntarCalidad by viewModel.preguntarCalidad.collectAsStateWithLifecycle()
     val urlCompartida by viewModel.urlCompartida.collectAsStateWithLifecycle()
     // Enlace esperando a que el usuario elija la calidad (diálogo abierto)
     var urlParaElegir by rememberSaveable { mutableStateOf<String?>(null) }
@@ -130,18 +129,23 @@ fun InicioScreen(
         }
     }
 
+    // Pregunta la calidad o, si está desactivado en Ajustes, descarga con la predeterminada
+    val prepararDescarga = { enlace: String ->
+        if (preguntarCalidad) urlParaElegir = enlace else lanzarDescarga(enlace, ultimaCalidad)
+    }
+
     val empezarDescarga = {
         if (url.isNotBlank() && estadoMotor is EstadoMotor.Listo) {
-            urlParaElegir = url
+            prepararDescarga(url.trim())
             url = ""
         }
     }
 
-    // Enlace compartido desde otra app: se pregunta la calidad y se descarga
-    // (el servicio espera a que el motor esté listo si aún está arrancando)
+    // Enlace compartido desde otra app (el servicio espera a que el motor esté listo
+    // si aún está arrancando)
     LaunchedEffect(urlCompartida) {
         urlCompartida?.let {
-            urlParaElegir = it
+            prepararDescarga(it)
             viewModel.compartidoConsumido()
         }
     }
@@ -183,14 +187,17 @@ fun InicioScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text(stringResource(R.string.app_name))
-                        // Versión a la vista para saber qué compilación está instalada
-                        Text(
-                            text = stringResource(R.string.version, BuildConfig.VERSION_NAME),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        LogoKlippo(tamano = 36.dp)
+                        Column(Modifier.padding(start = 12.dp)) {
+                            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge)
+                            // Versión a la vista para saber qué compilación está instalada
+                            Text(
+                                text = stringResource(R.string.version, BuildConfig.VERSION_NAME),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 },
                 actions = {
@@ -208,19 +215,9 @@ fun InicioScreen(
                             )
                         }
                     }
-                    MenuOpciones(
-                        estado = estadoMotor,
-                        actualizando = actualizando,
-                        sesiones = sesiones,
-                        onActualizar = viewModel::actualizarMotor,
-                        onIniciarSesion = iniciarSesion,
-                        onCerrarSesion = viewModel::cerrarSesion,
-                        onBuscarActualizaciones = if (viewModel.actualizacionesActivas) {
-                            viewModel::buscarActualizaciones
-                        } else {
-                            null
-                        },
-                    )
+                    IconButton(onClick = onAjustes) {
+                        Icon(painterResource(R.drawable.ic_ajustes), stringResource(R.string.ajustes_titulo))
+                    }
                 },
             )
         },
@@ -243,12 +240,31 @@ fun InicioScreen(
                 }
             }
             AvisoActualizacion(actualizacion, onActualizar = viewModel::actualizarApp)
+            // Campo del enlace: redondo, con pegar (vacío) o borrar (con texto) a la derecha
             OutlinedTextField(
                 value = url,
                 onValueChange = { url = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text(stringResource(R.string.inicio_url_etiqueta)) },
-                supportingText = { Text(stringResource(R.string.inicio_url_ayuda)) },
+                placeholder = { Text(stringResource(R.string.inicio_url_ayuda)) },
+                leadingIcon = { Icon(painterResource(R.drawable.ic_enlace), null) },
+                trailingIcon = {
+                    if (url.isEmpty()) {
+                        IconButton(onClick = {
+                            val portapapeles = context.getSystemService(ClipboardManager::class.java)
+                            Enlaces.extraerUrl(
+                                portapapeles.primaryClip?.takeIf { it.itemCount > 0 }
+                                    ?.getItemAt(0)?.coerceToText(context)?.toString()
+                            )?.let { url = it }
+                        }) {
+                            Icon(painterResource(R.drawable.ic_pegar), stringResource(R.string.inicio_pegar))
+                        }
+                    } else {
+                        IconButton(onClick = { url = "" }) {
+                            Icon(painterResource(R.drawable.ic_cerrar), stringResource(R.string.inicio_borrar))
+                        }
+                    }
+                },
+                shape = MaterialTheme.shapes.extraLarge,
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Uri,
@@ -259,23 +275,23 @@ fun InicioScreen(
             Button(
                 onClick = empezarDescarga,
                 enabled = url.isNotBlank() && estadoMotor is EstadoMotor.Listo,
-                modifier = Modifier.align(Alignment.End),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
             ) {
-                Text(stringResource(R.string.inicio_descargar))
+                Icon(painterResource(R.drawable.ic_guardar_galeria), null, Modifier.size(20.dp))
+                Text(stringResource(R.string.inicio_descargar), Modifier.padding(start = 8.dp))
             }
 
             if (descargas.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = stringResource(R.string.inicio_lista_vacia),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                PantallaVacia()
             } else {
+                Text(
+                    text = stringResource(R.string.inicio_tus_videos),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 8.dp, start = 4.dp),
+                )
                 val fila: @Composable (Descarga) -> Unit = { descarga ->
                     FilaDescarga(
                         descarga = descarga,
@@ -418,77 +434,29 @@ private fun AvisoMotorAntiguo(dias: Int, onActualizar: () -> Unit) {
     }
 }
 
-// Menú ⋮: versión de yt-dlp, actualizarlo y sesiones de Instagram/X
+// Sin descargas: el logo y una línea que explica cómo empezar
 @Composable
-private fun MenuOpciones(
-    estado: EstadoMotor,
-    actualizando: Boolean,
-    sesiones: Set<Plataforma>,
-    onActualizar: () -> Unit,
-    onIniciarSesion: (Plataforma) -> Unit,
-    onCerrarSesion: (Plataforma) -> Unit,
-    // null en las compilaciones de depuración, que no se pueden actualizar desde GitHub
-    onBuscarActualizaciones: (() -> Unit)?,
-) {
-    var abierto by remember { mutableStateOf(false) }
-
-    IconButton(onClick = { abierto = true }) {
-        Icon(
-            painter = painterResource(R.drawable.ic_mas_opciones),
-            contentDescription = stringResource(R.string.menu_opciones),
+private fun PantallaVacia() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        LogoKlippo(tamano = 88.dp)
+        Text(
+            text = stringResource(R.string.inicio_lista_vacia),
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 24.dp),
         )
-    }
-    DropdownMenu(expanded = abierto, onDismissRequest = { abierto = false }) {
-        val textoVersion = when (estado) {
-            EstadoMotor.Iniciando -> stringResource(R.string.motor_iniciando)
-            is EstadoMotor.Listo -> stringResource(
-                R.string.motor_version,
-                estado.version ?: stringResource(R.string.motor_version_desconocida),
-            )
-            is EstadoMotor.Error -> stringResource(R.string.motor_error)
-        }
-        DropdownMenuItem(text = { Text(textoVersion) }, onClick = {}, enabled = false)
-        DropdownMenuItem(
-            text = {
-                Text(
-                    stringResource(
-                        if (actualizando) R.string.motor_actualizando else R.string.motor_actualizar
-                    )
-                )
-            },
-            onClick = {
-                abierto = false
-                onActualizar()
-            },
-            enabled = estado is EstadoMotor.Listo && !actualizando,
+        Text(
+            text = stringResource(R.string.inicio_lista_vacia_detalle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 8.dp),
         )
-        HorizontalDivider()
-        for (plataforma in Plataforma.entries) {
-            val conSesion = plataforma in sesiones
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        stringResource(
-                            if (conSesion) R.string.sesion_cerrar else R.string.sesion_iniciar,
-                            plataforma.nombre,
-                        )
-                    )
-                },
-                onClick = {
-                    abierto = false
-                    if (conSesion) onCerrarSesion(plataforma) else onIniciarSesion(plataforma)
-                },
-            )
-        }
-        onBuscarActualizaciones?.let { buscar ->
-            HorizontalDivider()
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.actualizacion_buscar)) },
-                onClick = {
-                    abierto = false
-                    buscar()
-                },
-            )
-        }
     }
 }

@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
@@ -38,7 +39,7 @@ class Actualizador(private val context: Context, private val ajustes: AjustesRep
 
     // Al abrir la app: como mucho una petición a GitHub al día
     suspend fun comprobarSiToca() {
-        if (!activo) return
+        if (!activo || !ajustes.buscarActualizaciones.first()) return
         val ahora = System.currentTimeMillis()
         if (ahora - ajustes.ultimaComprobacion() < UN_DIA_MS) return
         ajustes.guardarUltimaComprobacion(ahora)
