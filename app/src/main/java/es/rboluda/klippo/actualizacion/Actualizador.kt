@@ -145,8 +145,18 @@ class Actualizador(private val context: Context, private val ajustes: AjustesRep
         private const val URL_ULTIMA = "https://api.github.com/repos/rboluda/Klippo/releases/latest"
         private const val UN_DIA_MS = 24 * 60 * 60 * 1000L
 
-        // Las versiones acaban en la marca de compilación (yyyyMMdd.HHmm): se comparan como texto
-        fun esMasNueva(candidata: String, actual: String): Boolean =
-            candidata.substringAfterLast('-') > actual.substringAfterLast('-')
+        // Versiones semánticas (1.2.3): se compara mayor, luego menor, luego parche. Lo que vaya
+        // tras un guion (-dev.…) se ignora; las antiguas 0.1.0-… quedan por debajo de la 1.0.0.
+        fun esMasNueva(candidata: String, actual: String): Boolean {
+            fun partes(version: String) = version.substringBefore('-').split('.')
+                .map { it.toIntOrNull() ?: 0 }
+                .let { it + List((3 - it.size).coerceAtLeast(0)) { 0 } }
+            val nueva = partes(candidata)
+            val instalada = partes(actual)
+            for (i in 0 until 3) {
+                if (nueva[i] != instalada[i]) return nueva[i] > instalada[i]
+            }
+            return false
+        }
     }
 }

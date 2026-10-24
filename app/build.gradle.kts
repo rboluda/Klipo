@@ -1,4 +1,3 @@
-import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -15,15 +14,13 @@ abstract class MarcaCompilacion : ValueSource<String, ValueSourceParameters.None
         LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd.HHmm"))
 }
 
-val versionBase = "0.1.0"
+// Versión de Klippo (SemVer: MAYOR.MENOR.PARCHE). La sube scripts/publicar.ps1 con -Subir.
+val versionKlippo = "1.0.0"
 val marca = providers.of(MarcaCompilacion::class) {}.get()
-// Cada compilación tiene su propia versión: "0.1.0-20261023.1305"
-val nombreVersion = "$versionBase-$marca"
-// versionCode = minutos desde 2026-01-01: siempre crece, así Android lo trata como actualización
-val codigoVersion = Duration.between(
-    LocalDateTime.of(2026, 1, 1, 0, 0),
-    LocalDateTime.parse(marca, DateTimeFormatter.ofPattern("yyyyMMdd.HHmm")),
-).toMinutes().toInt()
+val (versionMayor, versionMenor, versionParche) = versionKlippo.split(".").map { it.toInt() }
+// versionCode siempre creciente: 1.2.3 → 1020300. Queda por encima de los de las versiones
+// 0.1.0 anteriores (minutos desde 2026, unos 430 000), así Android lo trata como actualización.
+val codigoVersion = versionMayor * 1_000_000 + versionMenor * 10_000 + versionParche * 100
 
 android {
     namespace = "es.rboluda.klippo"
@@ -34,7 +31,7 @@ android {
         minSdk = 33
         targetSdk = 37
         versionCode = codigoVersion
-        versionName = nombreVersion
+        versionName = versionKlippo
 
         // Solo móviles de 64 bits: el motor (Python + FFmpeg) pesa mucho por ABI
         ndk {
@@ -58,6 +55,11 @@ android {
     }
 
     buildTypes {
+        // Las de depuración llevan la fecha y hora para distinguir cada compilación:
+        // "1.0.0-dev.20261024.1305". Las publicadas, solo el número: "1.0.0".
+        debug {
+            versionNameSuffix = "-dev.$marca"
+        }
         release {
             if (keystore != null) signingConfig = signingConfigs.getByName("release")
             // Sin minificar por ahora; se revisará cuando el motor esté integrado
@@ -88,20 +90,27 @@ android {
     }
 }
 
-// Copia el APK a <proyecto>/apk/ con la versión en el nombre
-// (klippo-0.1.0-20261023.1305-debug.apk), para que el móvil no confunda archivos.
-// Sync deja en esa carpeta solo el último de cada tipo (debug / release).
+// Copia el APK a <proyecto>/apk/ con la versión en el nombre, para que el móvil no confunda
+// archivos: klippo-1.0.0.apk (publicada) y klippo-1.0.0-dev.20261024.1305-debug.apk.
+// Sync deja en esa carpeta solo el último de cada tipo.
 listOf("debug", "release").forEach { tipo ->
-    val otro = if (tipo == "debug") "release" else "debug"
     val copiar = tasks.register<Sync>("copiarApk${tipo.replaceFirstChar { it.uppercase() }}") {
-        // Copia local: la configuration cache no admite referencias al script dentro de la tarea
-        val nombreApk = "klippo-$nombreVersion-$tipo.apk"
+        // Copias locales: la configuration cache no admite referencias al script en la tarea
+        val nombreApk = if (tipo == "release") {
+            "klippo-$versionKlippo.apk"
+        } else {
+            "klippo-$versionKlippo-dev.$marca-debug.apk"
+        }
+        val esRelease = tipo == "release"
         from(layout.buildDirectory.dir("outputs/apk/$tipo")) {
             include("*.apk")
             rename { nombreApk }
         }
         into(rootProject.layout.projectDirectory.dir("apk"))
-        preserve { include("*-$otro.apk") }
+        // No borrar el APK del otro tipo
+        preserve {
+            if (esRelease) include("*-debug.apk") else { include("*.apk"); exclude("*-debug.apk") }
+        }
     }
     tasks.matching { it.name == "assemble${tipo.replaceFirstChar { it.uppercase() }}" }
         .configureEach { finalizedBy(copiar) }
