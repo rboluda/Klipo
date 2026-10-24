@@ -118,10 +118,9 @@
     <string name="exportar_error">No se pudo generar el vídeo: %1$s</string>
     <string name="exportar_pista_galeria">Para guardarlo en la galería, pulsa Compartir y elige «Guardar en galería».</string>
     <string name="compartir">Compartir</string>
-    <string name="compartir_light">Klippo light</string>
-    <string name="compartir_sin_enlace">No hay ningún enlace que descargar</string>
-    <string name="compartir_descargando">Descargando en Klippo…</string>
     <string name="accion_whatsapp">Enviar por WhatsApp</string>
+    <string name="whatsapp_no_instalado">WhatsApp no está instalado</string>
+    <string name="whatsapp_error">No se pudo abrir WhatsApp: %1$s</string>
     <string name="accion_editar">Editar</string>
     <string name="galeria_guardar">Guardar en galería</string>
     <string name="galeria_guardado">Guardado en Movies/Klippo</string>

@@ -51,11 +51,9 @@ lo contrario:
 
 **Descargar**
 - YouTube, TikTok, X e Instagram (y muchas webs más gracias a yt-dlp).
-- Pega el enlace (se autorrellena desde el portapapeles) o compártelo desde la app de origen.
-  En el menú Compartir hay dos opciones:
-  - **Klippo light**: descarga en segundo plano sin sacarte de la app en la que estás.
-    Al terminar, la notificación trae *WhatsApp*, *Compartir* y *Guardar*.
-  - **Klippo**: abre la app y, al terminar la descarga, el editor.
+- Pega el enlace (se autorrellena desde el portapapeles) o usa *Compartir → Klippo* desde
+  la app de origen: Klippo descarga el vídeo y, al terminar, abre el editor.
+- Al acabar cada descarga, la notificación trae *WhatsApp*, *Compartir* y *Guardar*.
 - Eliges la calidad en cada vídeo: mejor disponible, 1080p, 720p, 480p o **solo audio (M4A)**.
   Prefiere H.264 para que el vídeo se vea y se comparta sin problemas en cualquier móvil.
 - Progreso en una notificación, con opción de cancelar.

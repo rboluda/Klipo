@@ -7,6 +7,7 @@ import android.content.Intent
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.service.chooser.ChooserAction
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider
 import es.rboluda.klippo.R
@@ -23,9 +24,20 @@ object Compartir {
         context.startActivity(intentElegir(context, video, titulo))
     }
 
-    // Envía el archivo directamente a WhatsApp (se elige el chat dentro de WhatsApp)
+    // Envía el archivo directamente a WhatsApp (se elige el chat dentro de WhatsApp).
+    // Si Android no puede abrirlo, se muestra el motivo en vez de no hacer nada.
     fun aWhatsApp(context: Context, video: File, titulo: String?) {
-        intentWhatsApp(context, video, titulo)?.let(context::startActivity)
+        val intent = intentWhatsApp(context, video, titulo)
+        try {
+            checkNotNull(intent) { context.getString(R.string.whatsapp_no_instalado) }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.whatsapp_error, e.message ?: e.javaClass.simpleName),
+                Toast.LENGTH_LONG,
+            ).show()
+        }
     }
 
     // Paquete de WhatsApp instalado, o null si no hay ninguno

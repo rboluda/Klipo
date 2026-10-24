@@ -1,11 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Tema de la ventana; el aspecto real lo pone Compose (Material 3) -->
-    <style name="Theme.Klippo" parent="android:Theme.Material.Light.NoActionBar" />
-
-    <!-- "Klippo light": sin ventana propia, solo el diálogo sobre la app de origen -->
-    <style name="Theme.Klippo.Transparente" parent="android:Theme.Translucent.NoTitleBar">
-        <item name="android:windowBackground">@android:color/transparent</item>
-        <item name="android:windowAnimationStyle">@null</item>
-    </style>
-</resources>
+    <style name="Theme.Klippo" parent="android:Theme.Material.Light.NoActionBar" /></resources>
