@@ -62,8 +62,10 @@ android {
         }
         release {
             if (keystore != null) signingConfig = signingConfigs.getByName("release")
-            // Sin minificar por ahora; se revisará cuando el motor esté integrado
-            isMinifyEnabled = false
+            // R8 quita el código y los recursos que no se usan de las librerías (el código de
+            // Klippo y el del motor se conservan enteros: ver proguard-rules.pro)
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
