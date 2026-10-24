@@ -1,11 +1,6 @@
 package es.rboluda.klippo.ui.inicio
 
-import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
 import androidx.annotation.StringRes
-import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
@@ -19,6 +14,7 @@ import es.rboluda.klippo.ajustes.Calidad
 import es.rboluda.klippo.ajustes.Vista
 import es.rboluda.klippo.descarga.Descarga
 import es.rboluda.klippo.descarga.DescargaService
+import es.rboluda.klippo.descarga.PermisoNotificaciones
 import es.rboluda.klippo.descarga.EstadoMotor
 import es.rboluda.klippo.descarga.MotorDescarga
 import es.rboluda.klippo.descarga.ResultadoActualizacion
@@ -29,7 +25,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.Dispatchers
+import es.rboluda.klippo.descarga.EstadoDescarga
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -75,7 +76,8 @@ class InicioViewModel(private val app: KlippoApp) : ViewModel() {
         viewModelScope.launch { app.ajustes.guardarVista(nueva) }
     }
 
-    // Enlace recibido desde Compartir de otra app; la pantalla lo consume y lo descarga
+    // Enlace recibido con Compartir → "Klippo" (la entrada que abre la app); la pantalla
+    // lo consume, lo descarga y, al terminar, abre el editor
     private val _urlCompartida = MutableStateFlow<String?>(null)
     val urlCompartida: StateFlow<String?> = _urlCompartida.asStateFlow()
 
@@ -87,6 +89,31 @@ class InicioViewModel(private val app: KlippoApp) : ViewModel() {
     fun compartidoConsumido() {
         _urlCompartida.value = null
     }
+
+    // Enlace cuya descarga, al completarse, debe abrir el editor automáticamente
+    private var abrirAlTerminar: String? = null
+
+    fun abrirEditorAlTerminar(url: String) {
+        abrirAlTerminar = url
+    }
+
+    // Descarga pedida desde la notificación de "completada"
+    private val _abrirPorId = Channel<String>(Channel.BUFFERED)
+
+    fun abrirDescarga(id: String) {
+        _abrirPorId.trySend(id)
+    }
+
+    // Emite el id de la descarga que hay que abrir en el editor (una sola vez)
+    val abrirEditor: Flow<String> = merge(
+        descargas
+            .mapNotNull { lista ->
+                val url = abrirAlTerminar ?: return@mapNotNull null
+                lista.firstOrNull { it.url == url && it.estado == EstadoDescarga.Completada }?.id
+            }
+            .onEach { abrirAlTerminar = null },
+        _abrirPorId.receiveAsFlow(),
+    )
 
     // Evita volver a pegar del portapapeles un enlace ya usado
     private var ultimaUrlPegada: String? = null
@@ -101,18 +128,9 @@ class InicioViewModel(private val app: KlippoApp) : ViewModel() {
         DescargaService.cancelar(app, id)
     }
 
-    // El permiso de notificaciones se pide solo una vez, en la primera descarga
-    private val preferencias = app.getSharedPreferences("klippo", Context.MODE_PRIVATE)
+    fun debePedirPermisoNotificaciones(): Boolean = PermisoNotificaciones.debePedir(app)
 
-    fun debePedirPermisoNotificaciones(): Boolean {
-        val concedido = ContextCompat.checkSelfPermission(app, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
-        return !concedido && !preferencias.getBoolean(CLAVE_PERMISO_PEDIDO, false)
-    }
-
-    fun marcarPermisoPedido() {
-        preferencias.edit { putBoolean(CLAVE_PERMISO_PEDIDO, true) }
-    }
+    fun marcarPermisoPedido() = PermisoNotificaciones.marcarPedido(app)
 
     private val _actualizando = MutableStateFlow(false)
     val actualizando: StateFlow<Boolean> = _actualizando.asStateFlow()
@@ -148,7 +166,6 @@ class InicioViewModel(private val app: KlippoApp) : ViewModel() {
     }
 
     companion object {
-        private const val CLAVE_PERMISO_PEDIDO = "permiso_notificaciones_pedido"
         const val DIAS_MOTOR_ANTIGUO = 30
 
         // Las versiones de yt-dlp son fechas: 2026.10.20 (o 2026.10.20.123456 en nightly)

@@ -31,7 +31,22 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Recibe enlaces desde el menú Compartir de otras apps -->
+            <!-- "Klippo" en el menú Compartir: abre la app y, al terminar, el editor -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+
+        <!-- "Klippo light" en el menú Compartir: descarga sin abrir la app -->
+        <activity
+            android:name=".CompartirActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:label="@string/compartir_light"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Klippo.Transparente">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />

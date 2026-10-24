@@ -8,6 +8,8 @@ import android.content.Context
 import android.content.Intent
 import es.rboluda.klippo.MainActivity
 import es.rboluda.klippo.R
+import es.rboluda.klippo.almacenamiento.Compartir
+import java.io.File
 
 // Canales y notificaciones de las descargas
 object Notificaciones {
@@ -56,7 +58,7 @@ object Notificaciones {
             .setProgress(100, porcentaje.coerceAtLeast(0), descarga.progreso < 0f)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-            .setContentIntent(abrirApp(context))
+            .setContentIntent(abrirApp(context, null))
             .addAction(
                 Notification.Action.Builder(null, context.getString(R.string.cancelar), cancelar).build()
             )
@@ -74,20 +76,55 @@ object Notificaciones {
                 context.getString(R.string.notif_fallida) to estado.mensaje
             else -> return
         }
-        val notificacion = Notification.Builder(context, CANAL_TERMINADAS)
+        val constructor = Notification.Builder(context, CANAL_TERMINADAS)
             .setSmallIcon(R.drawable.ic_notificacion)
             .setContentTitle(titulo)
             .setContentText(texto)
             .setAutoCancel(true)
-            .setContentIntent(abrirApp(context))
-            .build()
-        gestor.notify(descarga.id.hashCode(), notificacion)
+        val archivo = descarga.archivo
+        if (descarga.estado == EstadoDescarga.Completada && archivo != null) {
+            // Tocar la notificación abre el vídeo en el editor
+            constructor.setContentIntent(abrirApp(context, descarga.id))
+            accionesRapidas(context, descarga.id, archivo, descarga.titulo).forEach(constructor::addAction)
+        } else {
+            constructor.setContentIntent(abrirApp(context, null))
+        }
+        gestor.notify(descarga.id.hashCode(), constructor.build())
     }
 
-    private fun abrirApp(context: Context): PendingIntent = PendingIntent.getActivity(
+    // WhatsApp (si está instalado), Compartir y Guardar en galería, sin abrir Klippo
+    private fun accionesRapidas(context: Context, id: String, archivo: File, titulo: String?): List<Notification.Action> {
+        // Cada acción necesita su propio requestCode para no pisar las de otras descargas
+        fun actividad(intent: Intent, n: Int) = PendingIntent.getActivity(
+            context,
+            id.hashCode() * 4 + n,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        return listOfNotNull(
+            Compartir.intentWhatsApp(context, archivo, titulo)?.let {
+                Notification.Action.Builder(null, context.getString(R.string.whatsapp), actividad(it, 1)).build()
+            },
+            Notification.Action.Builder(
+                null,
+                context.getString(R.string.compartir),
+                actividad(Compartir.intentElegir(context, archivo, titulo), 2),
+            ).build(),
+            Notification.Action.Builder(
+                null,
+                context.getString(R.string.notif_guardar),
+                Compartir.pendienteGuardar(context, archivo),
+            ).build(),
+        )
+    }
+
+    // [idAbrir]: descarga que se abrirá en el editor; null = solo abrir la app
+    private fun abrirApp(context: Context, idAbrir: String?): PendingIntent = PendingIntent.getActivity(
         context,
-        0,
-        Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
-        PendingIntent.FLAG_IMMUTABLE,
+        idAbrir?.hashCode() ?: 0,
+        Intent(context, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            .apply { idAbrir?.let { putExtra(MainActivity.EXTRA_ABRIR, it) } },
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 }

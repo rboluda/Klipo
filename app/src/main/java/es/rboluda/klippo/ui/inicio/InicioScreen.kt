@@ -63,6 +63,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import es.rboluda.klippo.BuildConfig
 import es.rboluda.klippo.R
+import es.rboluda.klippo.ui.comun.DialogoCalidad
 import es.rboluda.klippo.ui.comun.LogoKlippo
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -141,13 +142,17 @@ fun InicioScreen(
         }
     }
 
-    // Enlace compartido desde otra app (el servicio espera a que el motor esté listo
-    // si aún está arrancando)
+    // Enlace compartido con "Klippo" desde otra app: se descarga y, al terminar, se abre
+    // el editor (el servicio espera a que el motor esté listo si aún está arrancando)
     LaunchedEffect(urlCompartida) {
         urlCompartida?.let {
+            viewModel.abrirEditorAlTerminar(it)
             prepararDescarga(it)
             viewModel.compartidoConsumido()
         }
+    }
+    LaunchedEffect(Unit) {
+        viewModel.abrirEditor.collect { onAbrir(it) }
     }
 
     urlParaElegir?.let { enlace ->
@@ -337,40 +342,6 @@ fun InicioScreen(
             }
         }
     }
-}
-
-// Diálogo que pregunta la calidad de cada vídeo; un toque en una opción lanza la descarga.
-// La última usada aparece marcada para elegirla rápido.
-@Composable
-private fun DialogoCalidad(
-    preseleccionada: Calidad,
-    onElegir: (Calidad) -> Unit,
-    onCancelar: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onCancelar,
-        title = { Text(stringResource(R.string.calidad_titulo)) },
-        text = {
-            Column {
-                for (opcion in Calidad.entries) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onElegir(opcion) }
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        RadioButton(selected = opcion == preseleccionada, onClick = { onElegir(opcion) })
-                        Text(stringResource(opcion.etiqueta))
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onCancelar) { Text(stringResource(R.string.cancelar)) }
-        },
-    )
 }
 
 // Aviso de versión nueva de Klippo en GitHub, con su descarga y los errores

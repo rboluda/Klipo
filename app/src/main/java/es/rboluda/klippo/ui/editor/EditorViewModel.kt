@@ -22,7 +22,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -49,13 +51,14 @@ class EditorViewModel(app: KlippoApp, private val estado: SavedStateHandle) : Vi
         estado.getStateFlow(CLAVE_PIXELADOS, ArrayList())
 
     init {
-        app.descargas.buscar(id)?.archivo?.let { archivo ->
-            viewModelScope.launch {
-                val medidas = withContext(Dispatchers.IO) { MedidasVideo.leer(archivo) }
-                _medidas.value = medidas
-                if (recorte.value == null && medidas.duracionMs > 0) {
-                    estado[CLAVE_RECORTE] = Recorte(0, medidas.duracionMs)
-                }
+        viewModelScope.launch {
+            // Al abrir desde la notificación con la app recién arrancada, la lista aún se está
+            // cargando desde la caché: se espera a que aparezca el vídeo
+            val archivo = descarga.mapNotNull { it?.archivo }.first()
+            val medidas = withContext(Dispatchers.IO) { MedidasVideo.leer(archivo) }
+            _medidas.value = medidas
+            if (recorte.value == null && medidas.duracionMs > 0) {
+                estado[CLAVE_RECORTE] = Recorte(0, medidas.duracionMs)
             }
         }
     }
