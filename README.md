@@ -1,0 +1,112 @@
+<p align="center">
+  <img src="docs/icono/klipo_icon.png" width="128" alt="Icono de Klippo">
+</p>
+
+<h1 align="center">Klippo</h1>
+
+<p align="center">
+  <b>Descarga, recorta y comparte vídeos de YouTube, TikTok, X e Instagram.</b><br>
+  Sin publicidad. Sin cuentas. Sin restos en tu galería.
+</p>
+
+<p align="center">
+  <a href="https://github.com/rboluda/Klippo/releases/latest"><b>⬇️ Descargar la última versión (APK)</b></a>
+</p>
+
+---
+
+## Por qué Klippo
+
+La mayoría de apps para descargar vídeos están llenas de anuncios, piden permisos de más
+y te dejan la galería llena de archivos que solo querías reenviar una vez. Klippo hace
+lo contrario:
+
+- **Sencilla.** Una pantalla con un campo para el enlace y la lista de tus vídeos.
+  Pegas, eliges calidad y listo. O, todavía más rápido, compartes el vídeo desde
+  la app de origen y Klippo empieza a descargarlo.
+- **Limpia.** Los vídeos se guardan solo dentro de Klippo y **se borran solos al cabo de
+  una hora**. A tu galería solo llega lo que tú decidas guardar.
+- **Privada.** Sin publicidad, sin analítica, sin Firebase, sin cuentas ni pantallas de
+  bienvenida. Klippo solo se conecta para descargar el vídeo que le pides y, una vez al
+  día, para mirar si hay una versión nueva (se puede desactivar).
+- **Rápida.** De la app de origen a WhatsApp en dos toques, sin pasar por la galería.
+
+## Qué hace
+
+**Descargar**
+- YouTube, TikTok, X e Instagram (y muchas webs más gracias a yt-dlp).
+- Pega el enlace (se autorrellena desde el portapapeles) o usa *Compartir → Klippo*.
+- Eliges la calidad en cada vídeo: mejor disponible, 1080p, 720p o 480p. Prefiere H.264
+  para que el vídeo se vea y se comparta sin problemas en cualquier móvil.
+- Progreso en una notificación, con opción de cancelar.
+- Para los vídeos que piden sesión (Instagram, X) puedes iniciarla una vez desde la propia
+  app. Klippo nunca ve tu contraseña: escribes en la web oficial y solo se guardan las cookies.
+
+**Editar**
+- Recortar el inicio y el final, con vista previa en bucle del tramo elegido.
+- Encuadre en 9:16, 1:1, 4:5 o libre: mueve y ajusta el marco sobre el vídeo.
+- Emojis encima del vídeo: arrástralos, pellízcalos para cambiar el tamaño.
+- Todo se aplica de una vez al exportar, con FFmpeg, en un vídeo H.264 + AAC.
+
+**Compartir**
+- Accesos directos en cada vídeo: enviar por WhatsApp, compartir con cualquier app,
+  guardar en la galería o editar.
+- *Guardar en galería* crea `Movies/Klippo/klippo_<fecha>.mp4`. Si no lo pulsas, el vídeo
+  nunca sale de Klippo.
+
+**A tu gusto**
+- Lista o mosaico con miniaturas.
+- Tema claro, oscuro o del sistema; colores de Klippo o los de tu fondo de pantalla.
+- Ajustes para el motor de descarga, cuentas, almacenamiento, notificaciones y actualizaciones.
+
+## Instalación
+
+Klippo no está en Google Play: se instala desde su APK.
+
+1. Descarga el archivo `klippo-….apk` de la [última versión](https://github.com/rboluda/Klippo/releases/latest).
+2. Ábrelo en el móvil y permite instalar apps desde ese origen cuando Android lo pida.
+
+Requisitos: Android 13 o superior en un móvil de 64 bits (arm64).
+
+## Actualizaciones
+
+Klippo comprueba una vez al día si hay versión nueva en este repositorio y te lo avisa en
+la pantalla de inicio. Pulsas **Actualizar**, confirmas en el instalador de Android y listo.
+También puedes buscarla a mano en *Ajustes → Actualizaciones* o desactivar la comprobación.
+
+El motor de descarga (yt-dlp) se actualiza aparte desde *Ajustes → Motor de descarga*:
+las plataformas cambian a menudo y una versión reciente del motor suele arreglar cualquier
+descarga que falle.
+
+## Compilar
+
+Necesitas Android Studio (incluye el JDK y el SDK; hace falta la plataforma Android 17, API 37).
+
+```bash
+./gradlew assembleDebug
+```
+
+El APK queda en `apk/klippo-<versión>-debug.apk`. La versión se genera sola en cada
+compilación a partir de la fecha y la hora.
+
+Tecnología: Kotlin, Jetpack Compose y Material 3, Media3 (ExoPlayer) para la vista previa,
+[youtubedl-android](https://github.com/yausername/youtubedl-android) para empaquetar yt-dlp
+y FFmpeg.
+
+## Créditos
+
+Klippo es posible gracias a estos proyectos de software libre:
+
+| Proyecto | Licencia |
+| --- | --- |
+| [yt-dlp](https://github.com/yt-dlp/yt-dlp) | Unlicense |
+| [FFmpeg](https://ffmpeg.org) | GPL |
+| [youtubedl-android](https://github.com/yausername/youtubedl-android) | GPL-3.0 |
+| [Jetpack Compose y Media3](https://developer.android.com/jetpack) | Apache 2.0 |
+
+Respeta los derechos de autor y las condiciones de cada plataforma: descarga solo
+contenido que tengas derecho a guardar.
+
+---
+
+<p align="center">Hecho por <a href="https://github.com/rboluda">rboluda</a></p>
