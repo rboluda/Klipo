@@ -71,20 +71,31 @@ class DescargaService : Service() {
         val id = descarga.id
         try {
             val cookies = Sesiones.cookiesPara(this, descarga.url)
-            val archivo = app.motor.descargar(
+            val archivos = app.motor.descargar(
                 id, descarga.url, descarga.carpeta, cookies, descarga.calidad,
             ) { progreso, eta ->
                 // Este callback llega desde el hilo del proceso de yt-dlp
                 app.descargas.actualizar(id) { it.copy(progreso = progreso, etaSegundos = eta) }
                 ambito.launch { refrescarNotificacion(id, forzar = false) }
             }
-            val miniatura = withContext(Dispatchers.IO) { Miniaturas.obtener(descarga.carpeta, archivo) }
+            val titulos = app.motor.leerTitulos(descarga.carpeta)
+            // En un carrusel cada vídeo lleva su posición: "Título (2/3)"
+            fun titulo(i: Int): String? {
+                val base = titulos.getOrNull(i) ?: titulos.firstOrNull()
+                return if (archivos.size == 1) base else listOfNotNull(base, "(${i + 1}/${archivos.size})").joinToString(" ")
+            }
+            withContext(Dispatchers.IO) {
+                // Los demás vídeos del carrusel pasan a su propia carpeta: una tarjeta por vídeo
+                archivos.drop(1).forEachIndexed { j, archivo -> separar(descarga, archivo, j + 1, titulo(j + 1)) }
+            }
+            val primero = archivos.first()
+            val miniatura = withContext(Dispatchers.IO) { Miniaturas.obtener(descarga.carpeta, primero) }
             app.descargas.actualizar(id) {
                 it.copy(
                     estado = EstadoDescarga.Completada,
                     progreso = 1f,
-                    archivo = archivo,
-                    titulo = app.motor.leerTitulo(descarga.carpeta),
+                    archivo = primero,
+                    titulo = titulo(0),
                     miniatura = miniatura,
                 )
             }
@@ -101,6 +112,27 @@ class DescargaService : Service() {
             app.descargas.buscar(id)?.let { Notificaciones.mostrarTerminada(this, it) }
             detenerSiNoHayTrabajo()
         }
+    }
+
+    // Mueve el vídeo [posicion] de un carrusel a su propia carpeta y lo añade como descarga
+    // completada (justo debajo del primero en la lista)
+    private fun separar(original: Descarga, archivo: File, posicion: Int, titulo: String?) {
+        val id = "${original.id}-${posicion + 1}"
+        val carpeta = File(app.carpetaDescargas, id).apply { mkdirs() }
+        val destino = File(carpeta, "video.${archivo.extension}")
+        if (!archivo.renameTo(destino)) return
+        val nueva = original.copy(
+            id = id,
+            carpeta = carpeta,
+            creado = original.creado - posicion,
+            titulo = titulo,
+            estado = EstadoDescarga.Completada,
+            progreso = 1f,
+            archivo = destino,
+            miniatura = Miniaturas.obtener(carpeta, destino),
+        )
+        MetaDescarga.escribir(nueva)
+        app.descargas.agregar(nueva)
     }
 
     // Actualiza la notificación de progreso como mucho dos veces por segundo

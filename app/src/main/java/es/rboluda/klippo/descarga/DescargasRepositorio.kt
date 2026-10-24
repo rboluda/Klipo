@@ -14,8 +14,9 @@ class DescargasRepositorio {
     private val _descargas = MutableStateFlow<List<Descarga>>(emptyList())
     val descargas: StateFlow<List<Descarga>> = _descargas.asStateFlow()
 
+    // La lista va de la más reciente a la más antigua
     fun agregar(descarga: Descarga) {
-        _descargas.update { listOf(descarga) + it }
+        _descargas.update { (listOf(descarga) + it).sortedByDescending { d -> d.creado } }
     }
 
     fun actualizar(id: String, cambio: (Descarga) -> Descarga) {

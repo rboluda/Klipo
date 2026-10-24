@@ -5,6 +5,7 @@ import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import es.rboluda.klippo.ajustes.Calidad
+import es.rboluda.klippo.sesion.Plataforma
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,7 +48,8 @@ class MotorDescarga(private val context: Context) {
     suspend fun esperarListo(): Boolean =
         estado.first { it !is EstadoMotor.Iniciando } is EstadoMotor.Listo
 
-    // Descarga el vídeo en [carpeta] y devuelve el MP4 resultante.
+    // Descarga el vídeo en [carpeta] y devuelve los archivos resultantes, en orden: uno
+    // normalmente, varios si es un carrusel de Instagram o X (video-1.mp4, video-2.mp4…).
     // Bloquea hasta terminar; se cancela con cancelar(id), que lanza CanceledException.
     suspend fun descargar(
         id: String,
@@ -57,7 +59,7 @@ class MotorDescarga(private val context: Context) {
         cookies: File?,
         calidad: Calidad,
         alProgreso: (progreso: Float, etaSegundos: Long) -> Unit,
-    ): File = withContext(Dispatchers.IO) {
+    ): List<File> = withContext(Dispatchers.IO) {
         check(esperarListo()) { "El motor no está listo" }
         carpeta.mkdirs()
         val peticion = YoutubeDLRequest(url).apply {
@@ -75,9 +77,18 @@ class MotorDescarga(private val context: Context) {
                 // Si solo hay WebM/MKV, se cambia el contenedor a MP4 sin recodificar
                 addOption("--remux-video", "mp4")
             }
-            addOption("--no-playlist")
+            if (Plataforma.deUrl(url) != null) {
+                // Instagram y X: un carrusel es una "lista"; se bajan todos sus vídeos
+                // (yt-dlp no descarga las fotos)
+                addOption("--yes-playlist")
+                addOption("--playlist-items", "1:$MAX_CARRUSEL")
+            } else {
+                // YouTube y demás: solo el vídeo del enlace, aunque sea de una lista
+                addOption("--no-playlist")
+            }
             addOption("--no-mtime")
-            addOption("-o", File(carpeta, "video.%(ext)s").absolutePath)
+            // video.mp4 si es uno solo; video-1.mp4, video-2.mp4… si es un carrusel
+            addOption("-o", File(carpeta, "video%(playlist_index&-{}|)s.%(ext)s").absolutePath)
             // yt-dlp las lee y, al terminar, guarda en el mismo archivo las que se renueven
             cookies?.let { addOption("--cookies", it.absolutePath) }
             // Guarda el título al terminar (after_move no activa el modo simulación)
@@ -88,12 +99,17 @@ class MotorDescarga(private val context: Context) {
         YoutubeDL.getInstance().execute(peticion, id) { progreso, eta, _ ->
             alProgreso((progreso / 100f).coerceIn(0f, 1f), eta)
         }
-        carpeta.listFiles { f -> f.extension in EXTENSIONES }?.maxByOrNull { it.length() }
+        // Orden natural: video-2 antes que video-10
+        carpeta.listFiles { f -> f.extension in EXTENSIONES }
+            ?.sortedBy { it.nameWithoutExtension.substringAfter('-', "0").toIntOrNull() ?: 0 }
+            ?.takeIf { it.isNotEmpty() }
             ?: error("No se encontró el vídeo descargado")
     }
 
-    fun leerTitulo(carpeta: File): String? =
-        File(carpeta, ARCHIVO_TITULO).takeIf { it.exists() }?.readText()?.trim()?.ifBlank { null }
+    // Un título por línea (uno por vídeo si es un carrusel)
+    fun leerTitulos(carpeta: File): List<String> =
+        File(carpeta, ARCHIVO_TITULO).takeIf { it.exists() }?.readLines()
+            ?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
 
     fun cancelar(id: String) {
         YoutubeDL.getInstance().destroyProcessById(id)
@@ -119,6 +135,9 @@ class MotorDescarga(private val context: Context) {
     companion object {
         // Archivos finales posibles: vídeo MP4 o solo audio M4A
         val EXTENSIONES = setOf("mp4", "m4a")
+
+        // Máximo de vídeos que se bajan de un carrusel
+        private const val MAX_CARRUSEL = 20
 
         // Mejor calidad en MP4, prefiriendo H.264 (se comparte y edita sin problemas);
         // si no existe, cualquier MP4 y, en último caso, lo mejor disponible.
