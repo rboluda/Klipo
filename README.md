@@ -6,7 +6,8 @@
 
 <p align="center">
   <b>Descarga, recorta y comparte vídeos de YouTube, TikTok, X e Instagram.</b><br>
-  Sin publicidad. Sin cuentas. Sin restos en tu galería.
+  Sin publicidad. Sin cuentas. Sin restos en tu galería.<br>
+  Los vídeos se borran solos: Klippo vacía su caché cada hora.
 </p>
 
 <p align="center">
@@ -24,8 +25,10 @@ lo contrario:
 - **Sencilla.** Una pantalla con un campo para el enlace y la lista de tus vídeos.
   Pegas, eliges calidad y listo. O, todavía más rápido, compartes el vídeo desde
   la app de origen y Klippo empieza a descargarlo.
-- **Limpia.** Los vídeos se guardan solo dentro de Klippo y **se borran solos al cabo de
-  una hora**. A tu galería solo llega lo que tú decidas guardar.
+- **Limpia.** Los vídeos se guardan solo dentro de Klippo, en su caché privada, y **se
+  borran solos**: cada vez que abres la app, Klippo vacía todo lo que tenga más de una
+  hora. Nada se acumula en tu móvil y a tu galería solo llega lo que tú decidas guardar.
+  Si tienes prisa, *Ajustes → Almacenamiento → Vaciar* lo borra al momento.
 - **Privada.** Sin publicidad, sin analítica, sin Firebase, sin cuentas ni pantallas de
   bienvenida. Klippo solo se conecta para descargar el vídeo que le pides y, una vez al
   día, para mirar si hay una versión nueva (se puede desactivar).
