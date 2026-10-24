@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Klippo</string>
-    <string name="version">v%1$s</string>
+    <string name="app_name" translatable="false">Klippo</string>
+    <string name="version" translatable="false">v%1$s</string>
     <string name="ajustes_tema_sistema">Sistema</string>
     <string name="ajustes_tema_claro">Claro</string>
     <string name="ajustes_tema_oscuro">Oscuro</string>
@@ -61,9 +61,9 @@
     <string name="calidad_720">Hasta 720p</string>
     <string name="calidad_480">Hasta 480p</string>
     <string name="calidad_mejor_corta">Mejor</string>
-    <string name="calidad_1080_corta">1080p</string>
-    <string name="calidad_720_corta">720p</string>
-    <string name="calidad_480_corta">480p</string>
+    <string name="calidad_1080_corta" translatable="false">1080p</string>
+    <string name="calidad_720_corta" translatable="false">720p</string>
+    <string name="calidad_480_corta" translatable="false">480p</string>
     <string name="calidad_audio">Solo audio (M4A)</string>
     <string name="calidad_audio_corta">Audio</string>
     <string name="vista_mosaico">Ver en mosaico</string>
@@ -71,6 +71,8 @@
 
     <string name="motor_version">Motor: yt-dlp %1$s</string>
     <string name="motor_error">Motor: error al iniciar</string>
+    <string name="motor_no_listo">El motor de descarga no está listo</string>
+    <string name="descarga_sin_archivo">No se encontró el vídeo descargado</string>
     <string name="motor_actualizado">Motor actualizado</string>
     <string name="motor_ya_al_dia">El motor ya está al día</string>
     <string name="motor_error_actualizar">No se pudo actualizar el motor</string>
@@ -119,7 +121,7 @@
     <string name="emoji_otro">Otro (usa el teclado de emojis)</string>
     <string name="emoji_anadir">Añadir</string>
     <string name="emoji_ayuda">Arrastra para mover, pellizca para cambiar el tamaño, mantén pulsado para borrar.</string>
-    <string name="recorte_resumen">%1$s – %2$s · %3$s</string>
+    <string name="recorte_resumen" translatable="false">%1$s – %2$s · %3$s</string>
     <string name="exportar_titulo">Exportar</string>
     <string name="exportar_no_disponible">Este vídeo ya no está disponible</string>
     <string name="exportar_generando">Generando vídeo… %1$d %%</string>
@@ -128,9 +130,10 @@
     <string name="compartir">Compartir</string>
     <string name="accion_whatsapp">Enviar por WhatsApp</string>
     <string name="whatsapp_no_instalado">WhatsApp no está instalado</string>
-    <string name="whatsapp_error">No se pudo abrir WhatsApp: %1$s</string>    <string name="accion_editar">Editar</string>
+    <string name="whatsapp_error">No se pudo abrir WhatsApp: %1$s</string>
+    <string name="accion_editar">Editar</string>
     <string name="galeria_guardar">Guardar en galería</string>
-    <string name="galeria_guardado">Guardado en Movies/Klippo</string>
+    <string name="galeria_guardado">Guardado en la galería, en la carpeta Klippo</string>
     <string name="galeria_error">No se pudo guardar en la galería</string>
 
     <string name="cancelar">Cancelar</string>
@@ -144,10 +147,10 @@
     <string name="notif_completada">Descarga completada</string>
     <string name="notif_fallida">Error en la descarga</string>
     <string name="notif_guardar">Guardar</string>
-    <string name="whatsapp">WhatsApp</string>
+    <string name="whatsapp" translatable="false">WhatsApp</string>
 
     <string name="descarga_analizando">Analizando enlace…</string>
-    <string name="descarga_progreso">%1$d %%</string>
+    <string name="descarga_progreso" translatable="false">%1$d %%</string>
     <string name="descarga_progreso_eta">%1$d %% · quedan %2$s</string>
     <string name="descarga_completada">Completada</string>
     <string name="descarga_cancelada">Cancelada</string>

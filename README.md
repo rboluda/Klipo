@@ -4,6 +4,8 @@
 
 <h1 align="center">Klippo</h1>
 
+<p align="center"><b>Español</b> · <a href="README.en.md">English</a></p>
+
 <p align="center">
   <b>Descarga, recorta y comparte vídeos de YouTube, TikTok, X e Instagram.</b><br>
   Sin publicidad. Sin cuentas. Sin restos en tu galería.<br>
@@ -108,8 +110,9 @@ Necesitas Android Studio (incluye el JDK y el SDK; hace falta la plataforma Andr
 ./gradlew assembleDebug
 ```
 
-El APK queda en `apk/klippo-<versión>-debug.apk`. La versión se genera sola en cada
-compilación a partir de la fecha y la hora.
+El APK queda en `apk/`. Klippo usa versiones semánticas (`MAYOR.MENOR.PARCHE`, definidas en
+`app/build.gradle.kts`); las compilaciones de depuración añaden la fecha y la hora para
+distinguirlas. La app está en español y en inglés, según el idioma del móvil.
 
 Tecnología: Kotlin, Jetpack Compose y Material 3, Media3 (ExoPlayer) para la vista previa,
 [youtubedl-android](https://github.com/yausername/youtubedl-android) para empaquetar yt-dlp
@@ -124,7 +127,7 @@ Klippo es posible gracias a estos proyectos de software libre:
 | [yt-dlp](https://github.com/yt-dlp/yt-dlp) | Unlicense |
 | [FFmpeg](https://ffmpeg.org) | GPL |
 | [youtubedl-android](https://github.com/yausername/youtubedl-android) | GPL-3.0 |
-| [Jetpack Compose y Media3](https://developer.android.com/jetpack) | Apache 2.0 |
+| [Jetpack Compose · Media3](https://developer.android.com/jetpack) | Apache 2.0 |
 
 Respeta los derechos de autor y las condiciones de cada plataforma: descarga solo
 contenido que tengas derecho a guardar.

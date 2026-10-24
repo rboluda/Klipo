@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English texts. Spanish (values/) is the default language of Klippo. -->
+<resources>
+    <string name="ajustes_tema_sistema">System</string>
+    <string name="ajustes_tema_claro">Light</string>
+    <string name="ajustes_tema_oscuro">Dark</string>
+
+    <string name="ajustes_titulo">Settings</string>
+    <string name="ajustes_apariencia">Appearance</string>
+    <string name="ajustes_tema">Theme</string>
+    <string name="ajustes_colores_sistema">Wallpaper colors</string>
+    <string name="ajustes_colores_sistema_detalle">Use your phone\'s colors instead of Klippo\'s</string>
+    <string name="ajustes_descargas">Downloads</string>
+    <string name="ajustes_preguntar_calidad">Ask for quality on every video</string>
+    <string name="ajustes_preguntar_calidad_detalle">If off, videos download straight away with the quality below</string>
+    <string name="ajustes_calidad">Download quality</string>
+    <string name="ajustes_calidad_marcada">Quality selected by default</string>
+    <string name="ajustes_vista">Show videos as</string>
+    <string name="ajustes_vista_lista">List</string>
+    <string name="ajustes_vista_mosaico">Grid</string>
+    <string name="ajustes_motor">Download engine</string>
+    <string name="ajustes_motor_detalle">Update it if a platform stops downloading</string>
+    <string name="ajustes_cuentas">Accounts</string>
+    <string name="ajustes_sesion_iniciada">Signed in</string>
+    <string name="ajustes_sin_sesion">Not signed in</string>
+    <string name="ajustes_iniciar_sesion">Sign in</string>
+    <string name="ajustes_cerrar_sesion">Sign out</string>
+    <string name="ajustes_cuentas_nota">Only needed for videos that require being signed in. Klippo never sees your password.</string>
+    <string name="ajustes_almacenamiento">Storage</string>
+    <string name="ajustes_cache">Videos in Klippo</string>
+    <string name="ajustes_cache_detalle">%1$s · deleted automatically after one hour</string>
+    <string name="ajustes_vaciar">Clear</string>
+    <string name="ajustes_cache_vaciada">Videos deleted</string>
+    <string name="ajustes_notificaciones">Notifications</string>
+    <string name="ajustes_notificaciones_sistema">Notification settings</string>
+    <string name="ajustes_notificaciones_detalle">Progress and a notice when each download finishes</string>
+    <string name="ajustes_actualizaciones">Updates</string>
+    <string name="ajustes_buscar_auto">Check for new versions</string>
+    <string name="ajustes_buscar_auto_detalle">Once a day, when Klippo opens</string>
+    <string name="ajustes_klippo">Klippo</string>
+    <string name="actualizacion_ver_inicio">A new version is available: you\'ll find it on the home screen</string>
+
+    <string name="acerca_titulo">About Klippo</string>
+    <string name="acerca_descripcion">Download videos from YouTube, TikTok, X and Instagram, trim them and share them. No fuss.</string>
+    <string name="acerca_autor">Made by rboluda</string>
+    <string name="acerca_mi_github">My GitHub</string>
+    <string name="acerca_codigo">Source code</string>
+    <string name="acerca_principios">No ads, no analytics, no accounts. Your videos never reach your gallery unless you ask.</string>
+    <string name="acerca_software_libre">Built with free software</string>
+    <string name="inicio_url_ayuda">YouTube, TikTok, X or Instagram link</string>
+    <string name="inicio_descargar">Download</string>
+    <string name="inicio_pegar">Paste</string>
+    <string name="inicio_borrar">Clear</string>
+    <string name="inicio_tus_videos">Your videos</string>
+    <string name="inicio_lista_vacia">Paste a link or share it with Klippo</string>
+    <string name="inicio_lista_vacia_detalle">Videos stay inside Klippo and disappear on their own after an hour. Only what you save reaches your gallery.</string>
+    <string name="calidad_titulo">Video quality</string>
+    <string name="calidad_mejor">Best quality</string>
+    <string name="calidad_1080">Up to 1080p</string>
+    <string name="calidad_720">Up to 720p</string>
+    <string name="calidad_480">Up to 480p</string>
+    <string name="calidad_mejor_corta">Best</string>
+    <string name="calidad_audio">Audio only (M4A)</string>
+    <string name="calidad_audio_corta">Audio</string>
+    <string name="vista_mosaico">Show as grid</string>
+    <string name="vista_lista">Show as list</string>
+
+    <string name="motor_version">Engine: yt-dlp %1$s</string>
+    <string name="motor_error">Engine: failed to start</string>
+    <string name="motor_no_listo">The download engine is not ready</string>
+    <string name="descarga_sin_archivo">The downloaded video could not be found</string>
+    <string name="motor_actualizado">Engine updated</string>
+    <string name="motor_ya_al_dia">The engine is already up to date</string>
+    <string name="motor_error_actualizar">Could not update the engine</string>
+    <string name="actualizar">Update</string>
+    <plurals name="motor_antiguo">
+        <item quantity="one">The engine is %1$d day old and may fail</item>
+        <item quantity="other">The engine is %1$d days old and may fail</item>
+    </plurals>
+    <string name="descarga_actualizar_reintentar">Update engine and retry</string>
+
+    <string name="actualizacion_buscar">Check for Klippo updates</string>
+    <string name="actualizacion_al_dia">You have the latest version of Klippo</string>
+    <string name="actualizacion_error_comprobar">Could not check for a new version</string>
+    <string name="actualizacion_disponible">New Klippo version: %1$s</string>
+    <string name="actualizacion_descargando">Downloading update… %1$d %%</string>
+    <string name="actualizacion_error">Update failed: %1$s</string>
+    <string name="actualizacion_error_instalar">Could not install the update. %1$s</string>
+
+    <string name="sesion_iniciar">Sign in to %1$s</string>
+    <string name="sesion_listo">Done</string>
+    <string name="sesion_guardada">%1$s session saved</string>
+    <string name="sesion_no_detectada">You haven\'t signed in to %1$s yet</string>
+    <string name="sesion_cerrada">Signed out of %1$s</string>
+    <string name="sesion_error_carga">Could not load %1$s. Check your connection.</string>
+    <string name="reintentar">Retry</string>
+
+    <string name="volver">Back</string>
+    <string name="siguiente">Next</string>
+    <string name="editor_titulo">Editor</string>
+    <string name="editor_recortar">Trim</string>
+    <string name="editor_encuadre">Crop</string>
+    <string name="encuadre_original">Original</string>
+    <string name="encuadre_libre">Free</string>
+    <string name="editor_texto">Text</string>
+    <string name="texto_ayuda">Drag to move, pinch to resize, long-press to delete.</string>
+    <string name="texto_titulo">Add text</string>
+    <string name="texto_campo">Text</string>
+    <string name="texto_contorno">Outline</string>
+    <string name="texto_fondo">Background</string>
+    <string name="editor_silenciar">Mute</string>
+    <string name="editor_activar_sonido">Unmute</string>
+    <string name="editor_emoji">Emoji</string>
+    <string name="editor_pixelar">Pixelate</string>
+    <string name="pixelar_ayuda">Drag to move, use the corners to resize, long-press to delete.</string>
+    <string name="emoji_titulo">Pick an emoji</string>
+    <string name="emoji_otro">Other (use the emoji keyboard)</string>
+    <string name="emoji_anadir">Add</string>
+    <string name="emoji_ayuda">Drag to move, pinch to resize, long-press to delete.</string>
+    <string name="exportar_titulo">Export</string>
+    <string name="exportar_no_disponible">This video is no longer available</string>
+    <string name="exportar_generando">Creating video… %1$d %%</string>
+    <string name="exportar_error">Could not create the video: %1$s</string>
+    <string name="exportar_pista_galeria">To save it to your gallery, tap Share and choose “Save to gallery”.</string>
+    <string name="compartir">Share</string>
+    <string name="accion_whatsapp">Send via WhatsApp</string>
+    <string name="whatsapp_no_instalado">WhatsApp is not installed</string>
+    <string name="whatsapp_error">Could not open WhatsApp: %1$s</string>
+    <string name="accion_editar">Edit</string>
+    <string name="galeria_guardar">Save to gallery</string>
+    <string name="galeria_guardado">Saved to your gallery, in the Klippo folder</string>
+    <string name="galeria_error">Could not save to the gallery</string>
+
+    <string name="cancelar">Cancel</string>
+    <string name="canal_progreso">Download progress</string>
+    <string name="canal_terminadas">Finished downloads</string>
+    <string name="notif_descargando">Downloading video</string>
+    <plurals name="notif_descargando_varias">
+        <item quantity="one">Downloading %1$d video</item>
+        <item quantity="other">Downloading %1$d videos</item>
+    </plurals>
+    <string name="notif_completada">Download complete</string>
+    <string name="notif_fallida">Download failed</string>
+    <string name="notif_guardar">Save</string>
+
+    <string name="descarga_analizando">Analyzing link…</string>
+    <string name="descarga_progreso_eta">%1$d %% · %2$s left</string>
+    <string name="descarga_completada">Completed</string>
+    <string name="descarga_cancelada">Cancelled</string>
+    <string name="descarga_fallida">Error: %1$s</string>
+</resources>

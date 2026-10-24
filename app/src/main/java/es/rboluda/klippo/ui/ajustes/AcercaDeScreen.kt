@@ -42,7 +42,7 @@ private val COMPONENTES = listOf(
     Componente("yt-dlp", "Unlicense", "https://github.com/yt-dlp/yt-dlp"),
     Componente("FFmpeg", "GPL", "https://ffmpeg.org"),
     Componente("youtubedl-android", "GPL-3.0", "https://github.com/yausername/youtubedl-android"),
-    Componente("Jetpack Compose y Media3", "Apache 2.0", "https://developer.android.com/jetpack"),
+    Componente("Jetpack Compose · Media3", "Apache 2.0", "https://developer.android.com/jetpack"),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -4,6 +4,7 @@ import android.content.Context
 import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
+import es.rboluda.klippo.R
 import es.rboluda.klippo.ajustes.Calidad
 import es.rboluda.klippo.sesion.Plataforma
 import kotlinx.coroutines.CoroutineScope
@@ -60,7 +61,7 @@ class MotorDescarga(private val context: Context) {
         calidad: Calidad,
         alProgreso: (progreso: Float, etaSegundos: Long) -> Unit,
     ): List<File> = withContext(Dispatchers.IO) {
-        check(esperarListo()) { "El motor no está listo" }
+        check(esperarListo()) { context.getString(R.string.motor_no_listo) }
         carpeta.mkdirs()
         val peticion = YoutubeDLRequest(url).apply {
             if (calidad.soloAudio) {
@@ -103,7 +104,7 @@ class MotorDescarga(private val context: Context) {
         carpeta.listFiles { f -> f.extension in EXTENSIONES }
             ?.sortedBy { it.nameWithoutExtension.substringAfter('-', "0").toIntOrNull() ?: 0 }
             ?.takeIf { it.isNotEmpty() }
-            ?: error("No se encontró el vídeo descargado")
+            ?: error(context.getString(R.string.descarga_sin_archivo))
     }
 
     // Un título por línea (uno por vídeo si es un carrusel)
