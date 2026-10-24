@@ -83,8 +83,11 @@ fun AccionesRapidas(descarga: Descarga, onEditar: () -> Unit, modifier: Modifier
                 Icon(painterResource(R.drawable.ic_guardar_galeria), stringResource(R.string.galeria_guardar))
             }
         }
-        IconButton(onClick = onEditar) {
-            Icon(painterResource(R.drawable.ic_editar), stringResource(R.string.accion_editar))
+        // Las herramientas del editor son para vídeo
+        if (!descarga.esAudio) {
+            IconButton(onClick = onEditar) {
+                Icon(painterResource(R.drawable.ic_editar), stringResource(R.string.accion_editar))
+            }
         }
     }
 }

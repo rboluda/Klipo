@@ -64,6 +64,8 @@
     <string name="calidad_1080_corta">1080p</string>
     <string name="calidad_720_corta">720p</string>
     <string name="calidad_480_corta">480p</string>
+    <string name="calidad_audio">Solo audio (M4A)</string>
+    <string name="calidad_audio_corta">Audio</string>
     <string name="vista_mosaico">Ver en mosaico</string>
     <string name="vista_lista">Ver en lista</string>
 

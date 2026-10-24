@@ -22,6 +22,11 @@ enum class Calidad(
     P1080(1080, R.string.calidad_1080, R.string.calidad_1080_corta),
     P720(720, R.string.calidad_720, R.string.calidad_720_corta),
     P480(480, R.string.calidad_480, R.string.calidad_480_corta),
+    // Solo la pista de audio, en M4A (AAC) sin recodificar
+    AUDIO(null, R.string.calidad_audio, R.string.calidad_audio_corta),
+    ;
+
+    val soloAudio: Boolean get() = this == AUDIO
 }
 
 // Cómo se muestran las descargas en Inicio

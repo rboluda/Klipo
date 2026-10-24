@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import es.rboluda.klippo.edicion.ParametrosEdicion
 import es.rboluda.klippo.ui.ajustes.AcercaDeScreen
 import es.rboluda.klippo.ui.ajustes.AjustesScreen
 import es.rboluda.klippo.ui.editor.EditorScreen
@@ -38,7 +39,9 @@ fun KlippoNavegacion(inicioViewModel: InicioViewModel) {
         composable(Rutas.INICIO) {
             InicioScreen(
                 viewModel = inicioViewModel,
-                onAbrir = { id -> nav.navigate(Rutas.editor(id)) },
+                onAbrir = { id ->
+                    nav.navigate(if (inicioViewModel.esAudio(id)) Rutas.exportar(id) else Rutas.editor(id))
+                },
                 onAjustes = { nav.navigate(Rutas.AJUSTES) },
             )
         }
@@ -59,13 +62,18 @@ fun KlippoNavegacion(inicioViewModel: InicioViewModel) {
         }
         composable(Rutas.EXPORTAR, arguments = argumentoId) { entrada ->
             // Los parámetros de edición viven en el ViewModel del editor (que sigue debajo en
-            // la pila y los guarda en SavedStateHandle): así no hay que pasarlos por la ruta
-            val entradaEditor = remember(entrada) { nav.getBackStackEntry(Rutas.EDITOR) }
-            val editor: EditorViewModel = viewModel(entradaEditor, factory = EditorViewModel.Factory)
-            ExportarScreen(
-                parametros = remember(entrada) { editor.parametros() },
-                onVolver = { nav.popBackStack() },
-            )
+            // la pila y los guarda en SavedStateHandle): así no hay que pasarlos por la ruta.
+            // Los audios llegan sin pasar por el editor: se exportan tal cual.
+            val entradaEditor = remember(entrada) {
+                runCatching { nav.getBackStackEntry(Rutas.EDITOR) }.getOrNull()
+            }
+            val parametros = if (entradaEditor != null) {
+                val editor: EditorViewModel = viewModel(entradaEditor, factory = EditorViewModel.Factory)
+                remember(entrada) { editor.parametros() }
+            } else {
+                ParametrosEdicion()
+            }
+            ExportarScreen(parametros = parametros, onVolver = { nav.popBackStack() })
         }
     }
 }

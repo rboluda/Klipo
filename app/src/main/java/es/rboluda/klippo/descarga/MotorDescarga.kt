@@ -4,6 +4,7 @@ import android.content.Context
 import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
+import es.rboluda.klippo.ajustes.Calidad
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,16 +55,26 @@ class MotorDescarga(private val context: Context) {
         carpeta: File,
         // Cookies de sesión (Instagram, X) si el usuario ha iniciado sesión
         cookies: File?,
-        // Altura máxima en píxeles (1080, 720...); null = la mejor disponible
-        alturaMax: Int?,
+        calidad: Calidad,
         alProgreso: (progreso: Float, etaSegundos: Long) -> Unit,
     ): File = withContext(Dispatchers.IO) {
         check(esperarListo()) { "El motor no está listo" }
         carpeta.mkdirs()
         val peticion = YoutubeDLRequest(url).apply {
-            addOption("-f", formato(alturaMax))
-            // Si solo hay WebM/MKV, se cambia el contenedor a MP4 sin recodificar
-            addOption("--remux-video", "mp4")
+            if (calidad.soloAudio) {
+                // M4A (AAC) tal cual si existe; si no, FFmpeg lo convierte
+                addOption("-f", "bestaudio[ext=m4a]/bestaudio")
+                addOption("-x")
+                addOption("--audio-format", "m4a")
+                // La imagen del vídeo sirve de miniatura (el audio no tiene fotogramas)
+                addOption("--write-thumbnail")
+                addOption("--convert-thumbnails", "jpg")
+                addOption("-o", "thumbnail:" + File(carpeta, "miniatura.%(ext)s").absolutePath)
+            } else {
+                addOption("-f", formato(calidad.alturaMax))
+                // Si solo hay WebM/MKV, se cambia el contenedor a MP4 sin recodificar
+                addOption("--remux-video", "mp4")
+            }
             addOption("--no-playlist")
             addOption("--no-mtime")
             addOption("-o", File(carpeta, "video.%(ext)s").absolutePath)
@@ -77,7 +88,7 @@ class MotorDescarga(private val context: Context) {
         YoutubeDL.getInstance().execute(peticion, id) { progreso, eta, _ ->
             alProgreso((progreso / 100f).coerceIn(0f, 1f), eta)
         }
-        carpeta.listFiles { f -> f.extension == "mp4" }?.maxByOrNull { it.length() }
+        carpeta.listFiles { f -> f.extension in EXTENSIONES }?.maxByOrNull { it.length() }
             ?: error("No se encontró el vídeo descargado")
     }
 
@@ -106,6 +117,9 @@ class MotorDescarga(private val context: Context) {
     }
 
     companion object {
+        // Archivos finales posibles: vídeo MP4 o solo audio M4A
+        val EXTENSIONES = setOf("mp4", "m4a")
+
         // Mejor calidad en MP4, prefiriendo H.264 (se comparte y edita sin problemas);
         // si no existe, cualquier MP4 y, en último caso, lo mejor disponible.
         // Con [alturaMax] se limita la resolución; si nada cumple el límite, se baja lo que haya.

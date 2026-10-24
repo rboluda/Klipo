@@ -26,4 +26,7 @@ data class Descarga(
     val etaSegundos: Long = -1,
     val archivo: File? = null,
     val miniatura: File? = null,
-)
+) {
+    // Descarga de solo audio (M4A): sin editor, se guarda en Music en vez de en Movies
+    val esAudio: Boolean get() = archivo?.extension == "m4a"
+}

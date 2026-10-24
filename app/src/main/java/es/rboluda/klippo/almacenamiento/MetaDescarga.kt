@@ -2,6 +2,7 @@ package es.rboluda.klippo.almacenamiento
 
 import es.rboluda.klippo.descarga.Descarga
 import es.rboluda.klippo.descarga.EstadoDescarga
+import es.rboluda.klippo.descarga.MotorDescarga
 import org.json.JSONObject
 import java.io.File
 
@@ -19,10 +20,11 @@ object MetaDescarga {
         File(descarga.carpeta, ARCHIVO).writeText(json.toString())
     }
 
-    // Solo devuelve descargas completadas (carpeta con meta.json y un MP4)
+    // Solo devuelve descargas completadas (carpeta con meta.json y un MP4 o M4A)
     fun leerCompletada(carpeta: File): Descarga? {
         val meta = File(carpeta, ARCHIVO).takeIf { it.exists() } ?: return null
-        val video = carpeta.listFiles { f -> f.extension == "mp4" }?.maxByOrNull { it.length() }
+        val video = carpeta.listFiles { f -> f.extension in MotorDescarga.EXTENSIONES }
+            ?.maxByOrNull { it.length() }
             ?: return null
         return try {
             val json = JSONObject(meta.readText())

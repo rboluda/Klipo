@@ -124,6 +124,9 @@ class InicioViewModel(private val app: KlippoApp) : ViewModel() {
         return true
     }
 
+    // Los audios se abren directamente en Exportar (el editor es para vídeo)
+    fun esAudio(id: String): Boolean = app.descargas.buscar(id)?.esAudio == true
+
     fun cancelar(id: String) {
         DescargaService.cancelar(app, id)
     }

@@ -51,9 +51,13 @@ lo contrario:
 
 **Descargar**
 - YouTube, TikTok, X e Instagram (y muchas webs más gracias a yt-dlp).
-- Pega el enlace (se autorrellena desde el portapapeles) o usa *Compartir → Klippo*.
-- Eliges la calidad en cada vídeo: mejor disponible, 1080p, 720p o 480p. Prefiere H.264
-  para que el vídeo se vea y se comparta sin problemas en cualquier móvil.
+- Pega el enlace (se autorrellena desde el portapapeles) o compártelo desde la app de origen.
+  En el menú Compartir hay dos opciones:
+  - **Klippo light**: descarga en segundo plano sin sacarte de la app en la que estás.
+    Al terminar, la notificación trae *WhatsApp*, *Compartir* y *Guardar*.
+  - **Klippo**: abre la app y, al terminar la descarga, el editor.
+- Eliges la calidad en cada vídeo: mejor disponible, 1080p, 720p, 480p o **solo audio (M4A)**.
+  Prefiere H.264 para que el vídeo se vea y se comparta sin problemas en cualquier móvil.
 - Progreso en una notificación, con opción de cancelar.
 - Para los vídeos que piden sesión (Instagram, X) puedes iniciarla una vez desde la propia
   app. Klippo nunca ve tu contraseña: escribes en la web oficial y solo se guardan las cookies.
@@ -62,13 +66,14 @@ lo contrario:
 - Recortar el inicio y el final, con vista previa en bucle del tramo elegido.
 - Encuadre en 9:16, 1:1, 4:5 o libre: mueve y ajusta el marco sobre el vídeo.
 - Emojis encima del vídeo: arrástralos, pellízcalos para cambiar el tamaño.
+- Pixelar zonas fijas (caras, matrículas…): dibuja una o varias zonas y ajústalas.
 - Todo se aplica de una vez al exportar, con FFmpeg, en un vídeo H.264 + AAC.
 
 **Compartir**
 - Accesos directos en cada vídeo: enviar por WhatsApp, compartir con cualquier app,
   guardar en la galería o editar.
-- *Guardar en galería* crea `Movies/Klippo/klippo_<fecha>.mp4`. Si no lo pulsas, el vídeo
-  nunca sale de Klippo.
+- *Guardar en galería* crea `Movies/Klippo/klippo_<fecha>.mp4` (o `Music/Klippo/…m4a` si es
+  solo audio). Si no lo pulsas, el vídeo nunca sale de Klippo.
 
 **A tu gusto**
 - Lista o mosaico con miniaturas.

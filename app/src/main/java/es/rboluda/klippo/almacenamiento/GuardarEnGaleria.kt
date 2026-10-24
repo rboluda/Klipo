@@ -11,28 +11,37 @@ import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-// Copia un vídeo de la caché a Movies/Klippo vía MediaStore (no necesita permisos)
+// Copia un archivo de la caché a la galería vía MediaStore (no necesita permisos):
+// los vídeos van a Movies/Klippo y los audios (M4A) a Music/Klippo
 object GuardarEnGaleria {
 
     private val FORMATO_FECHA = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
 
-    suspend fun guardar(context: Context, video: File): Uri = withContext(Dispatchers.IO) {
-        val nombre = "klippo_${LocalDateTime.now().format(FORMATO_FECHA)}.mp4"
+    suspend fun guardar(context: Context, archivo: File): Uri = withContext(Dispatchers.IO) {
+        val audio = archivo.extension == "m4a"
+        val nombre = "klippo_${LocalDateTime.now().format(FORMATO_FECHA)}.${archivo.extension}"
         val valores = ContentValues().apply {
-            put(MediaStore.Video.Media.DISPLAY_NAME, nombre)
-            put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
-            put(MediaStore.Video.Media.RELATIVE_PATH, "${Environment.DIRECTORY_MOVIES}/Klippo")
+            put(MediaStore.MediaColumns.DISPLAY_NAME, nombre)
+            put(MediaStore.MediaColumns.MIME_TYPE, Compartir.tipo(archivo))
+            put(
+                MediaStore.MediaColumns.RELATIVE_PATH,
+                (if (audio) Environment.DIRECTORY_MUSIC else Environment.DIRECTORY_MOVIES) + "/Klippo",
+            )
             // Oculto para la galería hasta terminar de copiar
-            put(MediaStore.Video.Media.IS_PENDING, 1)
+            put(MediaStore.MediaColumns.IS_PENDING, 1)
         }
         val resolver = context.contentResolver
-        val coleccion = MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-        val uri = resolver.insert(coleccion, valores) ?: error("No se pudo crear el vídeo en la galería")
+        val coleccion = if (audio) {
+            MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        } else {
+            MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        }
+        val uri = resolver.insert(coleccion, valores) ?: error("No se pudo crear el archivo en la galería")
         try {
             resolver.openOutputStream(uri)?.use { salida ->
-                video.inputStream().use { it.copyTo(salida) }
+                archivo.inputStream().use { it.copyTo(salida) }
             } ?: error("No se pudo escribir en la galería")
-            resolver.update(uri, ContentValues().apply { put(MediaStore.Video.Media.IS_PENDING, 0) }, null, null)
+            resolver.update(uri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null)
             uri
         } catch (e: Exception) {
             resolver.delete(uri, null, null)

@@ -1,6 +1,7 @@
 package es.rboluda.klippo.ui.exportar
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -136,7 +137,9 @@ class ExportarViewModel(
                 ancho = ancho,
                 alto = alto,
                 bytes = archivo.length(),
-                miniatura = lector.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC),
+                // Un audio no tiene fotogramas: se usa la imagen descargada del vídeo
+                miniatura = lector.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                    ?: descarga?.miniatura?.let { BitmapFactory.decodeFile(it.absolutePath) },
             )
         } catch (e: Exception) {
             null

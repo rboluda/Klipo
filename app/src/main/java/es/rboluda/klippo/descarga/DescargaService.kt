@@ -72,7 +72,7 @@ class DescargaService : Service() {
         try {
             val cookies = Sesiones.cookiesPara(this, descarga.url)
             val archivo = app.motor.descargar(
-                id, descarga.url, descarga.carpeta, cookies, descarga.calidad.alturaMax,
+                id, descarga.url, descarga.carpeta, cookies, descarga.calidad,
             ) { progreso, eta ->
                 // Este callback llega desde el hilo del proceso de yt-dlp
                 app.descargas.actualizar(id) { it.copy(progreso = progreso, etaSegundos = eta) }
