@@ -26,8 +26,8 @@ object Compartir {
 
     // Envía el archivo directamente a WhatsApp (se elige el chat dentro de WhatsApp).
     // Si Android no puede abrirlo, se muestra el motivo en vez de no hacer nada.
-    fun aWhatsApp(context: Context, video: File, titulo: String?) {
-        val intent = intentWhatsApp(context, video, titulo)
+    fun aWhatsApp(context: Context, video: File) {
+        val intent = intentWhatsApp(context, video)
         try {
             checkNotNull(intent) { context.getString(R.string.whatsapp_no_instalado) }
             context.startActivity(intent)
@@ -37,55 +37,6 @@ object Compartir {
                 context.getString(R.string.whatsapp_error, e.message ?: e.javaClass.simpleName),
                 Toast.LENGTH_LONG,
             ).show()
-        }
-    }
-
-    /**
-     * DIAGNÓSTICO TEMPORAL del botón de WhatsApp: intenta abrirlo igual que aWhatsApp y devuelve
-     * un informe de texto con todo lo relevante (paquetes, actividades que reciben el intent,
-     * archivo, códecs y resultado). Se quitará cuando el botón funcione.
-     */
-    fun diagnosticoWhatsApp(context: Context, video: File, titulo: String?): String = buildString {
-        fun linea(texto: String) = append(texto).append('\n')
-        linea("Klippo ${es.rboluda.klippo.BuildConfig.VERSION_NAME}")
-        linea("Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}) · ${Build.MANUFACTURER} ${Build.MODEL}")
-        val pm = context.packageManager
-        for (paquete in PAQUETES_WHATSAPP) {
-            val version = runCatching { pm.getPackageInfo(paquete, 0).versionName }.getOrNull()
-            linea("$paquete: ${version ?: "no visible/no instalado"}")
-        }
-        linea("Archivo: ${video.name} · existe=${video.exists()} · ${video.length()} bytes")
-        linea("Tipo: ${tipo(video)}")
-        runCatching {
-            val extractor = android.media.MediaExtractor()
-            extractor.setDataSource(video.absolutePath)
-            for (i in 0 until extractor.trackCount) {
-                linea("Pista $i: ${extractor.getTrackFormat(i).getString(android.media.MediaFormat.KEY_MIME)}")
-            }
-            extractor.release()
-        }.onFailure { linea("Pistas: error ${it.message}") }
-
-        val intent = intentWhatsApp(context, video, titulo)
-        if (intent == null) {
-            linea("intentWhatsApp = null (no se detecta WhatsApp)")
-            return@buildString
-        }
-        linea("Uri: ${intent.getParcelableExtra(Intent.EXTRA_STREAM, android.net.Uri::class.java)}")
-        linea("Paquete destino: ${intent.`package`}")
-        val receptores = pm.queryIntentActivities(intent, 0)
-        linea("Actividades que lo reciben: ${receptores.size}")
-        receptores.forEach { linea("  · ${it.activityInfo.packageName}/${it.activityInfo.name} exported=${it.activityInfo.exported}") }
-        linea("resolveActivity: ${intent.resolveActivity(pm)}")
-        // Sin paquete: ¿qué apps aceptan este tipo de archivo?
-        val todas = pm.queryIntentActivities(Intent(intent).setPackage(null), 0)
-        linea("Apps que aceptan ${tipo(video)} (sin filtrar): ${todas.size}")
-        todas.filter { it.activityInfo.packageName.contains("whatsapp") }
-            .forEach { linea("  · ${it.activityInfo.packageName}/${it.activityInfo.name}") }
-        try {
-            context.startActivity(intent)
-            linea("startActivity: enviado sin error")
-        } catch (e: Exception) {
-            linea("startActivity: ${e.javaClass.simpleName}: ${e.message}")
         }
     }
 
@@ -103,8 +54,15 @@ object Compartir {
         return selector
     }
 
-    fun intentWhatsApp(context: Context, video: File, titulo: String?): Intent? =
-        whatsapp(context)?.let { envio(context, video, titulo).setPackage(it) }
+    // WhatsApp se abre en su propia tarea, como cuando se elige desde el menú Compartir:
+    // las versiones recientes cierran su pantalla de compartir sin avisar si se abre dentro
+    // de la tarea de Klippo. Sin título: WhatsApp no lo usa.
+    fun intentWhatsApp(context: Context, video: File): Intent? =
+        whatsapp(context)?.let {
+            envio(context, video, null)
+                .setPackage(it)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
 
     // Broadcast que guarda el archivo en la galería sin abrir nada
     fun pendienteGuardar(context: Context, video: File): PendingIntent = PendingIntent.getBroadcast(

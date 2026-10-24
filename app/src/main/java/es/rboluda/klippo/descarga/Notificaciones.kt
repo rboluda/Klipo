@@ -102,7 +102,7 @@ object Notificaciones {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         return listOfNotNull(
-            Compartir.intentWhatsApp(context, archivo, titulo)?.let {
+            Compartir.intentWhatsApp(context, archivo)?.let {
                 Notification.Action.Builder(null, context.getString(R.string.whatsapp), actividad(it, 1)).build()
             },
             Notification.Action.Builder(

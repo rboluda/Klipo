@@ -1,16 +1,7 @@
 package es.rboluda.klippo.ui.inicio
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,10 +22,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import es.rboluda.klippo.R
 import es.rboluda.klippo.almacenamiento.Compartir
 import es.rboluda.klippo.almacenamiento.GuardarEnGaleria
 import es.rboluda.klippo.descarga.Descarga
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -57,35 +51,23 @@ fun AccionesRapidas(descarga: Descarga, onEditar: () -> Unit, modifier: Modifier
         }
     }
 
-    // DIAGNÓSTICO TEMPORAL: informe de lo que pasa al pulsar WhatsApp, para copiarlo y enviarlo
-    var informe by remember { mutableStateOf<String?>(null) }
-    informe?.let { texto ->
-        AlertDialog(
-            onDismissRequest = { informe = null },
-            title = { Text("Diagnóstico de WhatsApp") },
-            text = {
-                SelectionContainer {
-                    Text(
-                        text = texto,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.verticalScroll(rememberScrollState()),
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    context.getSystemService(ClipboardManager::class.java)
-                        .setPrimaryClip(ClipData.newPlainText("Diagnóstico Klippo", texto))
-                    informe = null
-                }) { Text("Copiar") }
-            },
-            dismissButton = { TextButton(onClick = { informe = null }) { Text("Cerrar") } },
-        )
-    }
+    val ciclo = LocalLifecycleOwner.current.lifecycle
 
     Row(modifier) {
         if (iconoWhatsApp != null) {
-            IconButton(onClick = { informe = Compartir.diagnosticoWhatsApp(context, video, descarga.titulo) }) {
+            IconButton(onClick = {
+                Compartir.aWhatsApp(context, video)
+                // Plan B: si WhatsApp no llega a abrirse (Klippo sigue delante), se ofrece
+                // el menú Compartir del sistema para elegirlo desde ahí
+                ambito.launch {
+                    delay(1_500)
+                    if (ciclo.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                        Toast.makeText(context, recursos.getString(R.string.whatsapp_plan_b), Toast.LENGTH_LONG)
+                            .show()
+                        Compartir.video(context, video, descarga.titulo)
+                    }
+                }
+            }) {
                 Image(
                     bitmap = iconoWhatsApp,
                     contentDescription = stringResource(R.string.accion_whatsapp),
