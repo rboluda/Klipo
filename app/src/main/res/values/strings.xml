@@ -103,6 +103,8 @@
     <string name="encuadre_original">Original</string>
     <string name="encuadre_libre">Libre</string>
     <string name="editor_emoji">Emoji</string>
+    <string name="editor_pixelar">Pixelar</string>
+    <string name="pixelar_ayuda">Arrastra para mover, usa las esquinas para el tamaño, mantén pulsado para borrar.</string>
     <string name="emoji_titulo">Elige un emoji</string>
     <string name="emoji_otro">Otro (usa el teclado de emojis)</string>
     <string name="emoji_anadir">Añadir</string>

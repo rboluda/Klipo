@@ -15,6 +15,7 @@ import es.rboluda.klippo.edicion.Formato
 import es.rboluda.klippo.edicion.MedidasVideo
 import es.rboluda.klippo.edicion.ParametrosEdicion
 import es.rboluda.klippo.edicion.Recorte
+import es.rboluda.klippo.edicion.ZonaPixelada
 import es.rboluda.klippo.ui.Rutas
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,6 +45,8 @@ class EditorViewModel(app: KlippoApp, private val estado: SavedStateHandle) : Vi
     // ArrayList: SavedStateHandle necesita un tipo Serializable concreto
     val emojis: StateFlow<ArrayList<EmojiSuperpuesto>> =
         estado.getStateFlow(CLAVE_EMOJIS, ArrayList())
+    val pixelados: StateFlow<ArrayList<ZonaPixelada>> =
+        estado.getStateFlow(CLAVE_PIXELADOS, ArrayList())
 
     init {
         app.descargas.buscar(id)?.archivo?.let { archivo ->
@@ -97,6 +100,24 @@ class EditorViewModel(app: KlippoApp, private val estado: SavedStateHandle) : Vi
         estado[CLAVE_EMOJIS] = ArrayList(lista)
     }
 
+    // Las zonas nuevas aparecen en el centro; se colocan después con gestos
+    fun agregarPixelado() {
+        val aspecto = _medidas.value?.aspecto?.takeIf { it > 0 } ?: return
+        guardarPixelados(pixelados.value + ZonaPixelada.nueva(aspecto))
+    }
+
+    fun cambiarPixelado(zona: ZonaPixelada) {
+        guardarPixelados(pixelados.value.map { if (it.id == zona.id) zona else it })
+    }
+
+    fun borrarPixelado(id: Long) {
+        guardarPixelados(pixelados.value.filterNot { it.id == id })
+    }
+
+    private fun guardarPixelados(lista: List<ZonaPixelada>) {
+        estado[CLAVE_PIXELADOS] = ArrayList(lista)
+    }
+
     // Lo que se aplicará al exportar (sin recorte si se deja el vídeo entero)
     fun parametros(): ParametrosEdicion {
         val duracion = _medidas.value?.duracionMs ?: 0L
@@ -105,6 +126,7 @@ class EditorViewModel(app: KlippoApp, private val estado: SavedStateHandle) : Vi
             recorte = recorteEfectivo,
             encuadre = encuadre.value,
             emojis = emojis.value.toList(),
+            pixelados = pixelados.value.toList(),
         )
     }
 
@@ -112,6 +134,7 @@ class EditorViewModel(app: KlippoApp, private val estado: SavedStateHandle) : Vi
         private const val CLAVE_RECORTE = "recorte"
         private const val CLAVE_ENCUADRE = "encuadre"
         private const val CLAVE_EMOJIS = "emojis"
+        private const val CLAVE_PIXELADOS = "pixelados"
         const val DURACION_MINIMA_MS = 500L
 
         val Factory = viewModelFactory {

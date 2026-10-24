@@ -29,7 +29,13 @@ data class Encuadre(
      * Arrastra una esquina (0 arriba-izq, 1 arriba-der, 2 abajo-izq, 3 abajo-der) dejando fija
      * la opuesta. En los formatos fijos se mantiene la proporción.
      */
-    fun redimensionar(esquina: Int, dx: Float, dy: Float, aspectoVideo: Float): Encuadre {
+    fun redimensionar(
+        esquina: Int,
+        dx: Float,
+        dy: Float,
+        aspectoVideo: Float,
+        minimo: Float = MINIMO,
+    ): Encuadre {
         val izquierda = esquina % 2 == 0
         val arriba = esquina < 2
         val anclaX = if (izquierda) x + ancho else x
@@ -41,12 +47,12 @@ data class Encuadre(
 
         val proporcion = formato.proporcion
         if (proporcion == null) {
-            nuevoAncho = nuevoAncho.coerceIn(MINIMO, maxAncho)
-            nuevoAlto = nuevoAlto.coerceIn(MINIMO, maxAlto)
+            nuevoAncho = nuevoAncho.coerceIn(minimo, maxAncho)
+            nuevoAlto = nuevoAlto.coerceIn(minimo, maxAlto)
         } else {
             // Proporción en coordenadas relativas: (ancho/alto en píxeles) / aspecto del vídeo
             val relativa = proporcion / aspectoVideo
-            nuevoAncho = nuevoAncho.coerceIn(MINIMO, maxAncho)
+            nuevoAncho = nuevoAncho.coerceIn(minimo, maxAncho)
             nuevoAlto = nuevoAncho / relativa
             if (nuevoAlto > maxAlto) {
                 nuevoAlto = maxAlto

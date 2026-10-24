@@ -58,16 +58,17 @@ import kotlinx.coroutines.delay
 import java.io.File
 import java.util.Locale
 
-// Herramientas de la barra inferior. Falta el pixelado (3.3).
+// Herramientas de la barra inferior
 private enum class Herramienta(@param:StringRes val nombre: Int, @param:DrawableRes val icono: Int) {
     RECORTAR(R.string.editor_recortar, R.drawable.ic_recortar),
     ENCUADRE(R.string.editor_encuadre, R.drawable.ic_encuadre),
     EMOJI(R.string.editor_emoji, R.drawable.ic_emoji),
+    PIXELAR(R.string.editor_pixelar, R.drawable.ic_pixelar),
 }
 
-// Botón para añadir y recordatorio de los gestos
+// Recordatorio de los gestos y botón para añadir (emojis y zonas pixeladas)
 @Composable
-private fun PanelEmoji(onAnadir: () -> Unit) {
+private fun PanelAnadir(@StringRes ayuda: Int, onAnadir: () -> Unit) {
     Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
         Row(
             modifier = Modifier
@@ -77,7 +78,7 @@ private fun PanelEmoji(onAnadir: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = stringResource(R.string.emoji_ayuda),
+                text = stringResource(ayuda),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
@@ -135,6 +136,7 @@ fun EditorScreen(
     val recorte by viewModel.recorte.collectAsStateWithLifecycle()
     val encuadre by viewModel.encuadre.collectAsStateWithLifecycle()
     val emojis by viewModel.emojis.collectAsStateWithLifecycle()
+    val pixelados by viewModel.pixelados.collectAsStateWithLifecycle()
     var eligiendoEmoji by rememberSaveable { mutableStateOf(false) }
 
     if (eligiendoEmoji) {
@@ -209,7 +211,10 @@ fun EditorScreen(
                     )
                 }
                 if (herramienta == Herramienta.EMOJI) {
-                    PanelEmoji(onAnadir = { eligiendoEmoji = true })
+                    PanelAnadir(R.string.emoji_ayuda, onAnadir = { eligiendoEmoji = true })
+                }
+                if (herramienta == Herramienta.PIXELAR) {
+                    PanelAnadir(R.string.pixelar_ayuda, onAnadir = viewModel::agregarPixelado)
                 }
                 NavigationBar {
                     for (opcion in Herramienta.entries) {
@@ -241,7 +246,16 @@ fun EditorScreen(
                         factory = { PlayerView(it).apply { player = reproductor } },
                         modifier = Modifier.fillMaxSize(),
                     )
-                    // Mismo orden que al exportar: emojis sobre el vídeo y, encima, el encuadre
+                    // Mismo orden que al exportar: pixelado, emojis y, encima, el encuadre
+                    if (pixelados.isNotEmpty() || herramienta == Herramienta.PIXELAR) {
+                        CapaPixelado(
+                            zonas = pixelados,
+                            editable = herramienta == Herramienta.PIXELAR,
+                            aspectoVideo = aspecto,
+                            onCambiar = viewModel::cambiarPixelado,
+                            onBorrar = viewModel::borrarPixelado,
+                        )
+                    }
                     if (emojis.isNotEmpty() || herramienta == Herramienta.EMOJI) {
                         CapaEmojis(
                             emojis = emojis,

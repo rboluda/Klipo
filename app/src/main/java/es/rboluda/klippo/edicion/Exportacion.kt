@@ -13,13 +13,15 @@ data class Recorte(val inicioMs: Long, val finMs: Long) : Serializable {
 }
 
 // Todo lo que el usuario ha elegido en el editor. Siempre se traduce a un único
-// comando FFmpeg al exportar. Falta el pixelado (3.3).
+// comando FFmpeg al exportar.
 data class ParametrosEdicion(
     val recorte: Recorte? = null,
     val encuadre: Encuadre? = null,
     val emojis: List<EmojiSuperpuesto> = emptyList(),
+    val pixelados: List<ZonaPixelada> = emptyList(),
 ) : Serializable {
-    val hayCambios: Boolean get() = recorte != null || encuadre != null || emojis.isNotEmpty()
+    val hayCambios: Boolean
+        get() = recorte != null || encuadre != null || emojis.isNotEmpty() || pixelados.isNotEmpty()
 
     // Texto estable que identifica estos parámetros (nombre del archivo en caché)
     fun clave(): String = listOfNotNull(
@@ -29,6 +31,9 @@ data class ParametrosEdicion(
         },
         emojis.takeIf { it.isNotEmpty() }?.joinToString("|") { m ->
             m.texto + listOf(m.x, m.y, m.tamano).joinToString("-") { decimal(it) }
+        },
+        pixelados.takeIf { it.isNotEmpty() }?.joinToString("|") { p ->
+            "p" + listOf(p.zona.x, p.zona.y, p.zona.ancho, p.zona.alto).joinToString("-") { decimal(it) }
         },
     ).joinToString("_")
 }
@@ -67,7 +72,10 @@ object Exportacion {
             }
             val duracionMs = parametros.recorte?.duracionMs ?: medidas.duracionMs
             Ffmpeg.ejecutar(
-                context, argumentos(original, temporal, parametros, emojis), duracionMs * 1000, alProgreso,
+                context,
+                argumentos(original, temporal, parametros, emojis, medidas),
+                duracionMs * 1000,
+                alProgreso,
             )
             check(temporal.renameTo(destino)) { "No se pudo guardar el vídeo exportado" }
         } finally {
@@ -82,6 +90,7 @@ object Exportacion {
         salida: File,
         parametros: ParametrosEdicion,
         emojis: List<EmojiRenderizado>,
+        medidas: MedidasVideo,
     ): List<String> = buildList {
         // -ss y -t delante de -i: se aplican solo al vídeo (no a las imágenes de los emojis);
         // al recodificar, el corte es exacto al fotograma
@@ -92,7 +101,7 @@ object Exportacion {
         // Cada emoji es una entrada más (1, 2, 3...); overlay repite la imagen todo el vídeo
         emojis.forEach { addAll(listOf("-i", it.png.absolutePath)) }
 
-        val grafo = grafoVideo(parametros, emojis)
+        val grafo = grafoVideo(parametros, emojis, medidas)
         if (grafo == null) {
             addAll(listOf("-map", "0:v:0"))
         } else {
@@ -112,20 +121,38 @@ object Exportacion {
 
     /**
      * Un único filter_complex con todos los pasos, en este orden:
-     * emojis (sobre el fotograma completo) → encuadre. Devuelve el grafo y la etiqueta final,
-     * o null si no hay nada que aplicar. FFmpeg ya ha girado el fotograma según sus metadatos,
-     * así que iw/ih coinciden con lo que se ve en el editor.
+     * pixelado → emojis (ambos sobre el fotograma completo) → encuadre. Devuelve el grafo y la
+     * etiqueta final, o null si no hay nada que aplicar. FFmpeg ya ha girado el fotograma según
+     * sus metadatos, así que iw/ih coinciden con lo que se ve en el editor.
      */
-    private fun grafoVideo(parametros: ParametrosEdicion, emojis: List<EmojiRenderizado>): Pair<String, String>? {
+    private fun grafoVideo(
+        parametros: ParametrosEdicion,
+        emojis: List<EmojiRenderizado>,
+        medidas: MedidasVideo,
+    ): Pair<String, String>? {
         val pasos = mutableListOf<String>()
         var actual = "0:v"
         var contador = 0
+        fun etiqueta() = "v${contador++}"
         fun paso(filtro: String) {
-            val salida = "v${contador++}"
+            val salida = etiqueta()
             pasos += "$filtro[$salida]"
             actual = salida
         }
 
+        // Pixelado: se copia el fotograma, se recorta la zona, se reduce y se vuelve a ampliar
+        // sin suavizar (bloques) y se pega encima en el mismo sitio
+        parametros.pixelados.forEach { p ->
+            val z = ZonaEnPixeles.de(p.zona, medidas)
+            val base = etiqueta()
+            val copia = etiqueta()
+            val bloques = etiqueta()
+            pasos += "[$actual]split[$base][$copia]"
+            pasos += "[$copia]crop=${z.ancho}:${z.alto}:${z.x}:${z.y}," +
+                "scale=${(z.ancho / z.bloque).coerceAtLeast(1)}:${(z.alto / z.bloque).coerceAtLeast(1)}:flags=neighbor," +
+                "scale=${z.ancho}:${z.alto}:flags=neighbor[$bloques]"
+            paso("[$base][$bloques]overlay=${z.x}:${z.y}")
+        }
         emojis.forEachIndexed { i, e -> paso("[$actual][${i + 1}:v]overlay=${e.x}:${e.y}") }
         parametros.encuadre?.let { e ->
             // Ancho y alto pares: libx264 con yuv420p no admite dimensiones impares
