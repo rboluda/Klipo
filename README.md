@@ -14,6 +14,19 @@
   <a href="https://github.com/rboluda/Klippo/releases/latest"><b>⬇️ Descargar la última versión (APK)</b></a>
 </p>
 
+<p align="center">
+  <img src="docs/capturas/1-inicio.jpg" width="200" alt="Pantalla de inicio vacía">
+  &nbsp;
+  <img src="docs/capturas/2-calidad.jpg" width="200" alt="Elegir la calidad antes de descargar">
+  &nbsp;
+  <img src="docs/capturas/3-lista.jpg" width="200" alt="Vídeo descargado con sus accesos directos">
+  &nbsp;
+  <img src="docs/capturas/4-ajustes.jpg" width="104" alt="Ajustes">
+</p>
+<p align="center">
+  <sub>Inicio · Calidad en cada vídeo · Accesos directos: WhatsApp, compartir, galería y editar · Ajustes</sub>
+</p>
+
 ---
 
 ## Por qué Klippo
