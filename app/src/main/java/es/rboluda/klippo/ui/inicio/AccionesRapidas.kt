@@ -22,13 +22,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import es.rboluda.klippo.R
 import es.rboluda.klippo.almacenamiento.Compartir
 import es.rboluda.klippo.almacenamiento.GuardarEnGaleria
 import es.rboluda.klippo.descarga.Descarga
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -51,23 +48,9 @@ fun AccionesRapidas(descarga: Descarga, onEditar: () -> Unit, modifier: Modifier
         }
     }
 
-    val ciclo = LocalLifecycleOwner.current.lifecycle
-
     Row(modifier) {
         if (iconoWhatsApp != null) {
-            IconButton(onClick = {
-                Compartir.aWhatsApp(context, video)
-                // Plan B: si WhatsApp no llega a abrirse (Klippo sigue delante), se ofrece
-                // el menú Compartir del sistema para elegirlo desde ahí
-                ambito.launch {
-                    delay(1_500)
-                    if (ciclo.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
-                        Toast.makeText(context, recursos.getString(R.string.whatsapp_plan_b), Toast.LENGTH_LONG)
-                            .show()
-                        Compartir.video(context, video, descarga.titulo)
-                    }
-                }
-            }) {
+            IconButton(onClick = { Compartir.aWhatsApp(context, video) }) {
                 Image(
                     bitmap = iconoWhatsApp,
                     contentDescription = stringResource(R.string.accion_whatsapp),

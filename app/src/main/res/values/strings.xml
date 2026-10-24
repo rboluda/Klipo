@@ -120,9 +120,7 @@
     <string name="compartir">Compartir</string>
     <string name="accion_whatsapp">Enviar por WhatsApp</string>
     <string name="whatsapp_no_instalado">WhatsApp no está instalado</string>
-    <string name="whatsapp_error">No se pudo abrir WhatsApp: %1$s</string>
-    <string name="whatsapp_plan_b">WhatsApp no se abrió: elígelo en el menú Compartir</string>
-    <string name="accion_editar">Editar</string>
+    <string name="whatsapp_error">No se pudo abrir WhatsApp: %1$s</string>    <string name="accion_editar">Editar</string>
     <string name="galeria_guardar">Guardar en galería</string>
     <string name="galeria_guardado">Guardado en Movies/Klippo</string>
     <string name="galeria_error">No se pudo guardar en la galería</string>

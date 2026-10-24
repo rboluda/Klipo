@@ -2,6 +2,7 @@ package es.rboluda.klippo.almacenamiento
 
 import android.app.PendingIntent
 import android.content.ClipData
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Icon
@@ -24,7 +25,7 @@ object Compartir {
         context.startActivity(intentElegir(context, video, titulo))
     }
 
-    // Envía el archivo directamente a WhatsApp (se elige el chat dentro de WhatsApp).
+    // Envía el archivo a WhatsApp a través del menú del sistema filtrado (ver intentWhatsApp).
     // Si Android no puede abrirlo, se muestra el motivo en vez de no hacer nada.
     fun aWhatsApp(context: Context, video: File) {
         val intent = intentWhatsApp(context, video)
@@ -54,15 +55,23 @@ object Compartir {
         return selector
     }
 
-    // WhatsApp se abre en su propia tarea, como cuando se elige desde el menú Compartir:
-    // las versiones recientes cierran su pantalla de compartir sin avisar si se abre dentro
-    // de la tarea de Klippo. Sin título: WhatsApp no lo usa.
-    fun intentWhatsApp(context: Context, video: File): Intent? =
-        whatsapp(context)?.let {
-            envio(context, video, null)
-                .setPackage(it)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
+    /**
+     * WhatsApp cierra sin avisar su pantalla de compartir si otra app la abre directamente
+     * (comprobado en Android 16 con WhatsApp 2.26); en cambio funciona desde el menú del
+     * sistema. Por eso se abre ese menú pero excluyendo todas las apps salvo WhatsApp: queda
+     * solo WhatsApp y, normalmente, sus chats recientes como accesos directos.
+     */
+    fun intentWhatsApp(context: Context, video: File): Intent? {
+        whatsapp(context) ?: return null
+        val envio = envio(context, video, null)
+        // Para ver todas las apps que aceptan el archivo hace falta <queries> en el manifest
+        val excluidas = context.packageManager.queryIntentActivities(envio, 0)
+            .map { it.activityInfo }
+            .filterNot { it.packageName in PAQUETES_WHATSAPP }
+            .map { ComponentName(it.packageName, it.name) }
+        return Intent.createChooser(envio, context.getString(R.string.whatsapp))
+            .putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, excluidas.toTypedArray())
+    }
 
     // Broadcast que guarda el archivo en la galería sin abrir nada
     fun pendienteGuardar(context: Context, video: File): PendingIntent = PendingIntent.getBroadcast(

@@ -8,10 +8,19 @@
     <!-- Instalar las actualizaciones descargadas de GitHub (el usuario confirma cada una) -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
-    <!-- Para saber si WhatsApp está instalado (acceso directo "enviar por WhatsApp") -->
+    <!-- Acceso directo "enviar por WhatsApp": saber si está instalado y ver el resto de apps
+         que aceptan vídeos o audios para dejarlas fuera del menú y que solo quede WhatsApp -->
     <queries>
         <package android:name="com.whatsapp" />
         <package android:name="com.whatsapp.w4b" />
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="video/*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="audio/*" />
+        </intent>
     </queries>
 
     <application
