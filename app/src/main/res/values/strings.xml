@@ -48,6 +48,7 @@
     <string name="acerca_codigo">Código fuente</string>
     <string name="acerca_principios">Sin publicidad, sin analítica, sin cuentas. Tus vídeos no llegan a la galería salvo que tú lo pidas.</string>
     <string name="acerca_software_libre">Hecho con software libre</string>
+    <string name="acerca_licencia">Software libre · Licencia GPL-3.0</string>
     <string name="inicio_url_ayuda">Enlace de YouTube, TikTok, X o Instagram</string>
     <string name="inicio_descargar">Descargar</string>
     <string name="inicio_pegar">Pegar</string>

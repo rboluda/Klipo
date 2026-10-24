@@ -47,6 +47,7 @@
     <string name="acerca_codigo">Source code</string>
     <string name="acerca_principios">No ads, no analytics, no accounts. Your videos never reach your gallery unless you ask.</string>
     <string name="acerca_software_libre">Built with free software</string>
+    <string name="acerca_licencia">Free software · GPL-3.0 license</string>
     <string name="inicio_url_ayuda">YouTube, TikTok, X or Instagram link</string>
     <string name="inicio_descargar">Download</string>
     <string name="inicio_pegar">Paste</string>

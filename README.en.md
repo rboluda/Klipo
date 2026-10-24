@@ -131,6 +131,13 @@ Klippo is made possible by these free software projects:
 
 Respect copyright and each platform's terms: only download content you have the right to keep.
 
+## License
+
+Klippo is free software under the [GNU General Public License v3.0 or later](LICENSE)
+(GPL-3.0-or-later): you can use, study, modify and redistribute it, as long as the versions
+you distribute remain free and come with their source code. It's the license required by
+the components it bundles, such as youtubedl-android and FFmpeg with libx264.
+
 ---
 
 <p align="center">Made by <a href="https://github.com/rboluda">rboluda</a></p>

@@ -119,6 +119,11 @@ fun AcercaDeScreen(onVolver: () -> Unit) {
                 textAlign = TextAlign.Center,
             )
 
+            // Licencia de Klippo, con enlace al texto completo en el repositorio
+            TextButton(onClick = { enlaces.openUri("$GITHUB_PROYECTO/blob/main/LICENSE") }) {
+                Text(stringResource(R.string.acerca_licencia))
+            }
+
             // Créditos del software libre
             Column(Modifier.fillMaxWidth()) {
                 Text(
