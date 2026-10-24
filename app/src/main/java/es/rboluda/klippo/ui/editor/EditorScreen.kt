@@ -18,6 +18,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -62,6 +63,7 @@ import java.util.Locale
 private enum class Herramienta(@param:StringRes val nombre: Int, @param:DrawableRes val icono: Int) {
     RECORTAR(R.string.editor_recortar, R.drawable.ic_recortar),
     ENCUADRE(R.string.editor_encuadre, R.drawable.ic_encuadre),
+    TEXTO(R.string.editor_texto, R.drawable.ic_texto),
     EMOJI(R.string.editor_emoji, R.drawable.ic_emoji),
     PIXELAR(R.string.editor_pixelar, R.drawable.ic_pixelar),
 }
@@ -138,6 +140,18 @@ fun EditorScreen(
     val emojis by viewModel.emojis.collectAsStateWithLifecycle()
     val pixelados by viewModel.pixelados.collectAsStateWithLifecycle()
     var eligiendoEmoji by rememberSaveable { mutableStateOf(false) }
+    var escribiendoTexto by rememberSaveable { mutableStateOf(false) }
+    val silenciar by viewModel.silenciar.collectAsStateWithLifecycle()
+
+    if (escribiendoTexto) {
+        DialogoTexto(
+            onAnadir = { texto, estilo ->
+                viewModel.agregarTexto(texto, estilo)
+                escribiendoTexto = false
+            },
+            onCancelar = { escribiendoTexto = false },
+        )
+    }
 
     if (eligiendoEmoji) {
         DialogoEmoji(
@@ -151,6 +165,11 @@ fun EditorScreen(
     var herramienta by rememberSaveable { mutableStateOf<Herramienta?>(null) }
     val archivo = descarga?.archivo?.takeIf { it.exists() }
     val reproductor = archivo?.let { rememberReproductor(it) }
+
+    // Sin sonido también en la vista previa, para oír cómo quedará
+    LaunchedEffect(reproductor, silenciar) {
+        reproductor?.volume = if (silenciar) 0f else 1f
+    }
 
     // Vista previa del recorte: la reproducción se queda dentro del tramo elegido, en bucle
     LaunchedEffect(reproductor, recorte) {
@@ -176,6 +195,14 @@ fun EditorScreen(
                     }
                 },
                 actions = {
+                    // Quitar el sonido del vídeo exportado
+                    IconButton(onClick = viewModel::alternarSilencio, enabled = archivo != null) {
+                        Icon(
+                            painterResource(if (silenciar) R.drawable.ic_silencio else R.drawable.ic_volumen),
+                            stringResource(if (silenciar) R.string.editor_activar_sonido else R.string.editor_silenciar),
+                            tint = if (silenciar) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                        )
+                    }
                     TextButton(
                         onClick = {
                             reproductor?.pause()
@@ -209,6 +236,9 @@ fun EditorScreen(
                         seleccionado = encuadre?.formato,
                         onElegir = viewModel::elegirFormato,
                     )
+                }
+                if (herramienta == Herramienta.TEXTO) {
+                    PanelAnadir(R.string.texto_ayuda, onAnadir = { escribiendoTexto = true })
                 }
                 if (herramienta == Herramienta.EMOJI) {
                     PanelAnadir(R.string.emoji_ayuda, onAnadir = { eligiendoEmoji = true })
@@ -256,10 +286,11 @@ fun EditorScreen(
                             onBorrar = viewModel::borrarPixelado,
                         )
                     }
-                    if (emojis.isNotEmpty() || herramienta == Herramienta.EMOJI) {
+                    val editandoEmojis = herramienta == Herramienta.EMOJI || herramienta == Herramienta.TEXTO
+                    if (emojis.isNotEmpty() || editandoEmojis) {
                         CapaEmojis(
                             emojis = emojis,
-                            editable = herramienta == Herramienta.EMOJI,
+                            editable = editandoEmojis,
                             onMover = viewModel::moverEmoji,
                             onEscalar = viewModel::escalarEmoji,
                             onBorrar = viewModel::borrarEmoji,

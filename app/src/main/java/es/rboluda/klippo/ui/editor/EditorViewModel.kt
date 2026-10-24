@@ -11,6 +11,7 @@ import es.rboluda.klippo.KlippoApp
 import es.rboluda.klippo.descarga.Descarga
 import es.rboluda.klippo.edicion.EmojiSuperpuesto
 import es.rboluda.klippo.edicion.Encuadre
+import es.rboluda.klippo.edicion.EstiloTexto
 import es.rboluda.klippo.edicion.Formato
 import es.rboluda.klippo.edicion.MedidasVideo
 import es.rboluda.klippo.edicion.ParametrosEdicion
@@ -87,6 +88,24 @@ class EditorViewModel(app: KlippoApp, private val estado: SavedStateHandle) : Vi
         guardarEmojis(emojis.value + EmojiSuperpuesto(id = System.nanoTime(), texto = texto))
     }
 
+    // Los textos van en la misma lista que los emojis (mismos gestos y misma exportación)
+    fun agregarTexto(texto: String, estilo: EstiloTexto) {
+        guardarEmojis(
+            emojis.value + EmojiSuperpuesto(
+                id = System.nanoTime(),
+                texto = texto,
+                tamano = EmojiSuperpuesto.TAMANO_INICIAL_TEXTO,
+                estilo = estilo,
+            )
+        )
+    }
+
+    val silenciar: StateFlow<Boolean> = estado.getStateFlow(CLAVE_SILENCIAR, false)
+
+    fun alternarSilencio() {
+        estado[CLAVE_SILENCIAR] = !silenciar.value
+    }
+
     fun moverEmoji(id: Long, dx: Float, dy: Float) = cambiarEmoji(id) { it.mover(dx, dy) }
 
     fun escalarEmoji(id: Long, factor: Float) = cambiarEmoji(id) { it.escalar(factor) }
@@ -130,6 +149,7 @@ class EditorViewModel(app: KlippoApp, private val estado: SavedStateHandle) : Vi
             encuadre = encuadre.value,
             emojis = emojis.value.toList(),
             pixelados = pixelados.value.toList(),
+            silenciar = silenciar.value,
         )
     }
 
@@ -138,6 +158,7 @@ class EditorViewModel(app: KlippoApp, private val estado: SavedStateHandle) : Vi
         private const val CLAVE_ENCUADRE = "encuadre"
         private const val CLAVE_EMOJIS = "emojis"
         private const val CLAVE_PIXELADOS = "pixelados"
+        private const val CLAVE_SILENCIAR = "silenciar"
         const val DURACION_MINIMA_MS = 500L
 
         val Factory = viewModelFactory {

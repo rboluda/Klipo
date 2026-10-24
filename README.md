@@ -51,6 +51,7 @@ lo contrario:
 
 **Descargar**
 - YouTube, TikTok, X e Instagram (y muchas webs más gracias a yt-dlp).
+- Carruseles de Instagram y X: se descargan todos sus vídeos, cada uno por separado.
 - Pega el enlace (se autorrellena desde el portapapeles) o usa *Compartir → Klippo* desde
   la app de origen: Klippo descarga el vídeo y, al terminar, abre el editor.
 - Al acabar cada descarga, la notificación trae *WhatsApp*, *Compartir* y *Guardar*.
@@ -63,7 +64,9 @@ lo contrario:
 **Editar**
 - Recortar el inicio y el final, con vista previa en bucle del tramo elegido.
 - Encuadre en 9:16, 1:1, 4:5 o libre: mueve y ajusta el marco sobre el vídeo.
+- Texto encima del vídeo, con contorno o con fondo.
 - Emojis encima del vídeo: arrástralos, pellízcalos para cambiar el tamaño.
+- Quitar el sonido del vídeo exportado.
 - Pixelar zonas fijas (caras, matrículas…): dibuja una o varias zonas y ajústalas.
 - Todo se aplica de una vez al exportar, con FFmpeg, en un vídeo H.264 + AAC.
 

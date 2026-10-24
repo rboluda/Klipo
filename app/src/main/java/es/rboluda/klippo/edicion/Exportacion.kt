@@ -17,11 +17,15 @@ data class Recorte(val inicioMs: Long, val finMs: Long) : Serializable {
 data class ParametrosEdicion(
     val recorte: Recorte? = null,
     val encuadre: Encuadre? = null,
+    // Emojis y textos superpuestos
     val emojis: List<EmojiSuperpuesto> = emptyList(),
     val pixelados: List<ZonaPixelada> = emptyList(),
+    // Quitar el sonido del vídeo exportado
+    val silenciar: Boolean = false,
 ) : Serializable {
     val hayCambios: Boolean
-        get() = recorte != null || encuadre != null || emojis.isNotEmpty() || pixelados.isNotEmpty()
+        get() = recorte != null || encuadre != null || emojis.isNotEmpty() || pixelados.isNotEmpty() ||
+            silenciar
 
     // Texto estable que identifica estos parámetros (nombre del archivo en caché)
     fun clave(): String = listOfNotNull(
@@ -30,8 +34,9 @@ data class ParametrosEdicion(
             "e${e.formato.name}" + listOf(e.x, e.y, e.ancho, e.alto).joinToString("-") { decimal(it) }
         },
         emojis.takeIf { it.isNotEmpty() }?.joinToString("|") { m ->
-            m.texto + listOf(m.x, m.y, m.tamano).joinToString("-") { decimal(it) }
+            m.texto + (m.estilo?.name ?: "") + listOf(m.x, m.y, m.tamano).joinToString("-") { decimal(it) }
         },
+        "mudo".takeIf { silenciar },
         pixelados.takeIf { it.isNotEmpty() }?.joinToString("|") { p ->
             "p" + listOf(p.zona.x, p.zona.y, p.zona.ancho, p.zona.alto).joinToString("-") { decimal(it) }
         },
@@ -107,16 +112,19 @@ object Exportacion {
         } else {
             addAll(listOf("-filter_complex", grafo.first, "-map", "[${grafo.second}]"))
         }
-        addAll(
-            listOf(
-                "-map", "0:a:0?",
-                // H.264 + AAC: se reproduce y comparte en cualquier sitio
-                "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
-                "-c:a", "aac", "-b:a", "160k",
-                "-movflags", "+faststart",
-                "-f", "mp4", salida.absolutePath,
-            )
-        )
+        if (grafo == null && parametros.recorte == null) {
+            // Solo se quita el sonido: el vídeo se copia tal cual, sin recodificar (instantáneo)
+            addAll(listOf("-c:v", "copy"))
+        } else {
+            // H.264: se reproduce y comparte en cualquier sitio
+            addAll(listOf("-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p"))
+        }
+        if (parametros.silenciar) {
+            add("-an")
+        } else {
+            addAll(listOf("-map", "0:a:0?", "-c:a", "aac", "-b:a", "160k"))
+        }
+        addAll(listOf("-movflags", "+faststart", "-f", "mp4", salida.absolutePath))
     }
 
     /**

@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -38,6 +40,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import es.rboluda.klippo.R
 import es.rboluda.klippo.edicion.EmojiSuperpuesto
+import es.rboluda.klippo.edicion.EstiloTexto
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntSize
 import kotlin.math.roundToInt
 
 /**
@@ -59,6 +70,9 @@ fun CapaEmojis(
     val escalar by rememberUpdatedState(onEscalar)
     val borrar by rememberUpdatedState(onBorrar)
     val densidad = LocalDensity.current
+    // Tamaño en pantalla de cada elemento, para saber cuál se toca (no es estado: solo lo leen
+    // los gestos)
+    val tamanos = remember { HashMap<Long, IntSize>() }
 
     BoxWithConstraints(modifier.fillMaxSize()) {
         val ancho = constraints.maxWidth.toFloat()
@@ -69,7 +83,8 @@ fun CapaEmojis(
                 .pointerInput(Unit) {
                     awaitEachGesture {
                         val inicio = awaitFirstDown(requireUnconsumed = false)
-                        val tocado = emojiEn(actuales, inicio.position, ancho, alto) ?: return@awaitEachGesture
+                        val tocado = emojiEn(actuales, tamanos, inicio.position, ancho, alto)
+                            ?: return@awaitEachGesture
                         // Mientras haya dedos: un dedo mueve, dos dedos (pellizco) escalan
                         while (true) {
                             val evento = awaitPointerEvent()
@@ -88,7 +103,7 @@ fun CapaEmojis(
                 }
                 .pointerInput(Unit) {
                     detectTapGestures(onLongPress = { punto ->
-                        emojiEn(actuales, punto, ancho, alto)?.let { borrar(it.id) }
+                        emojiEn(actuales, tamanos, punto, ancho, alto)?.let { borrar(it.id) }
                     })
                 }
         } else {
@@ -97,32 +112,88 @@ fun CapaEmojis(
 
         Box(Modifier.fillMaxSize().then(gestos)) {
             for (emoji in emojis) {
-                Text(
-                    text = emoji.texto,
-                    // toSp con la densidad: el tamaño en píxeles es exactamente tamano × alto
-                    fontSize = with(densidad) { (emoji.tamano * alto).toSp() },
-                    lineHeight = with(densidad) { (emoji.tamano * alto).toSp() },
-                    modifier = Modifier.layout { medible, _ ->
-                        val colocable = medible.measure(Constraints())
-                        layout(colocable.width, colocable.height) {
-                            colocable.place(
-                                (emoji.x * ancho - colocable.width / 2f).roundToInt(),
-                                (emoji.y * alto - colocable.height / 2f).roundToInt(),
+                // Tamaño de letra en píxeles = tamano × alto, igual que al exportar
+                val letra = emoji.tamano * alto
+                val fuente = with(densidad) { letra.toSp() }
+                // Centrado en (x, y) y guardando su tamaño para los gestos
+                val colocar = Modifier.layout { medible, _ ->
+                    val colocable = medible.measure(Constraints())
+                    tamanos[emoji.id] = IntSize(colocable.width, colocable.height)
+                    layout(colocable.width, colocable.height) {
+                        colocable.place(
+                            (emoji.x * ancho - colocable.width / 2f).roundToInt(),
+                            (emoji.y * alto - colocable.height / 2f).roundToInt(),
+                        )
+                    }
+                }
+                when (emoji.estilo) {
+                    null -> Text(text = emoji.texto, fontSize = fuente, lineHeight = fuente, modifier = colocar)
+                    EstiloTexto.CONTORNO -> {
+                        val margen = with(densidad) { (letra * EstiloTexto.GROSOR_CONTORNO).toDp() }
+                        // Borde negro debajo y relleno blanco encima
+                        Box(colocar) {
+                            Text(
+                                text = emoji.texto,
+                                fontSize = fuente,
+                                lineHeight = fuente,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black,
+                                maxLines = 1,
+                                style = TextStyle(
+                                    drawStyle = Stroke(width = letra * EstiloTexto.GROSOR_CONTORNO, join = StrokeJoin.Round),
+                                ),
+                                modifier = Modifier.padding(margen),
+                            )
+                            Text(
+                                text = emoji.texto,
+                                fontSize = fuente,
+                                lineHeight = fuente,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                maxLines = 1,
+                                modifier = Modifier.padding(margen),
                             )
                         }
-                    },
-                )
+                    }
+                    EstiloTexto.FONDO -> Text(
+                        text = emoji.texto,
+                        fontSize = fuente,
+                        lineHeight = fuente,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        maxLines = 1,
+                        modifier = colocar
+                            .background(
+                                Color.Black.copy(alpha = EstiloTexto.OPACIDAD_FONDO),
+                                RoundedCornerShape(with(densidad) { (letra * EstiloTexto.RADIO_FONDO).toDp() }),
+                            )
+                            .padding(with(densidad) { (letra * EstiloTexto.MARGEN_FONDO).toDp() }),
+                    )
+                }
             }
         }
     }
 }
 
-// El emoji bajo el dedo (el de más arriba si se solapan)
-private fun emojiEn(emojis: List<EmojiSuperpuesto>, punto: Offset, ancho: Float, alto: Float): EmojiSuperpuesto? =
-    emojis.lastOrNull { e ->
-        val radio = e.tamano * alto * 0.7f
-        (Offset(e.x * ancho, e.y * alto) - punto).getDistance() < radio
+// El emoji o texto bajo el dedo (el de más arriba si se solapan)
+private fun emojiEn(
+    emojis: List<EmojiSuperpuesto>,
+    tamanos: Map<Long, IntSize>,
+    punto: Offset,
+    ancho: Float,
+    alto: Float,
+): EmojiSuperpuesto? = emojis.lastOrNull { e ->
+    val centro = Offset(e.x * ancho, e.y * alto)
+    val tamano = tamanos[e.id]
+    if (tamano == null) {
+        (centro - punto).getDistance() < e.tamano * alto * 0.7f
+    } else {
+        // Un poco de margen para que sea fácil acertar
+        val margen = 12f
+        kotlin.math.abs(punto.x - centro.x) < tamano.width / 2f + margen &&
+            kotlin.math.abs(punto.y - centro.y) < tamano.height / 2f + margen
     }
+}
 
 // Los más usados a mano; cualquier otro, con el teclado de emojis del móvil
 private val FRECUENTES = listOf(
@@ -164,6 +235,48 @@ fun DialogoEmoji(onElegir: (String) -> Unit, onCancelar: () -> Unit) {
                 onClick = { primerEmoji(otro)?.let(onElegir) },
                 enabled = otro.isNotBlank(),
             ) {
+                Text(stringResource(R.string.emoji_anadir))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancelar) { Text(stringResource(R.string.cancelar)) }
+        },
+    )
+}
+
+// Escribir un texto y elegir su estilo (contorno o fondo)
+@Composable
+fun DialogoTexto(onAnadir: (texto: String, estilo: EstiloTexto) -> Unit, onCancelar: () -> Unit) {
+    var texto by remember { mutableStateOf("") }
+    var estilo by remember { mutableStateOf(EstiloTexto.CONTORNO) }
+    AlertDialog(
+        onDismissRequest = onCancelar,
+        title = { Text(stringResource(R.string.texto_titulo)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = texto,
+                    onValueChange = { texto = it },
+                    label = { Text(stringResource(R.string.texto_campo)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = estilo == EstiloTexto.CONTORNO,
+                        onClick = { estilo = EstiloTexto.CONTORNO },
+                        label = { Text(stringResource(R.string.texto_contorno)) },
+                    )
+                    FilterChip(
+                        selected = estilo == EstiloTexto.FONDO,
+                        onClick = { estilo = EstiloTexto.FONDO },
+                        label = { Text(stringResource(R.string.texto_fondo)) },
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onAnadir(texto.trim(), estilo) }, enabled = texto.isNotBlank()) {
                 Text(stringResource(R.string.emoji_anadir))
             }
         },
