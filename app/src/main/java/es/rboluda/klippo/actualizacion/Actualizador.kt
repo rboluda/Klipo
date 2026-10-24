@@ -141,7 +141,7 @@ class Actualizador(private val context: Context, private val ajustes: AjustesRep
     }
 
     companion object {
-        private const val URL_ULTIMA = "https://api.github.com/repos/rboluda/Klipo/releases/latest"
+        private const val URL_ULTIMA = "https://api.github.com/repos/rboluda/Klippo/releases/latest"
         private const val UN_DIA_MS = 24 * 60 * 60 * 1000L
 
         // Las versiones acaban en la marca de compilación (yyyyMMdd.HHmm): se comparan como texto

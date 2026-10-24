@@ -1,4 +1,4 @@
-# Compila la release firmada y la publica en GitHub Releases (rboluda/Klipo).
+# Compila la release firmada y la publica en GitHub Releases (rboluda/Klippo).
 # La app instalada la detecta al abrirse (una vez al día) o con "Buscar actualizaciones".
 #
 # Uso:  .\scripts\publicar.ps1 -Notas "Qué cambia en esta versión"
@@ -20,7 +20,7 @@ try {
     $version = $apk.Name -replace '^klippo-', '' -replace '-release\.apk$', ''
     if (-not $Notas) { $Notas = "Klippo $version" }
 
-    gh release create "v$version" $apk.FullName --repo rboluda/Klipo `
+    gh release create "v$version" $apk.FullName --repo rboluda/Klippo `
         --title "Klippo $version" --notes $Notas --latest
     if ($LASTEXITCODE -ne 0) { throw "No se pudo crear la release en GitHub" }
     Write-Output "Publicada la versión $version"
